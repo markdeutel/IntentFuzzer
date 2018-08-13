@@ -19,11 +19,13 @@ class IntentFuzzer(Module, common.PackageManager):
     
     def add_arguments(self, parser):
         parser.add_argument("packageName")
+        parser.add_argument("numIter")
     
     def execute(self, arguments):
         templates = self.__build_intent_templates(arguments.packageName)
-        for template in templates:
-            self.__execute_intent(template)
+        for i in range(0, int(arguments.numIter)):
+            for template in templates:
+                self.__execute_intent(template)
 
     def __build_intent_templates(self, packageName):
         templates = []
@@ -69,7 +71,6 @@ class IntentFuzzer(Module, common.PackageManager):
     
     def __execute_intent(self, template):
         try:
-            template.printIntent(self)
             if template.type == "activity":
                 self.getContext().startActivity(template.buildIntent(self))
             elif template.type == "service":
@@ -85,8 +86,16 @@ class IntentTemplate:
         self.component = component
         self.extras = extras
         self.bundle = bundle
-        
-    def printIntent(self, context):
+    
+    def buildIntent(self, context):
+        intent = context.new("android.content.Intent")
+        self.__set_component_to(intent, context)
+        self.__set_extra_to(intent, context)
+        self.__set_bundle_extra_to(intent, context)
+        self.__print_intent(context)
+        return intent;
+    
+    def __print_intent(self, context):
         if self.component != None:
             context.stdout.write("type: %s package: %s component: %s extras: " % (self.type, self.component[0], self.component[1]))
             if self.extras != None:
@@ -97,13 +106,6 @@ class IntentTemplate:
                 for invoc in self.bundle:
                     context.stdout.write("returnType: %s name: %s " % invoc)
             context.stdout.write("\n")
-    
-    def buildIntent(self, context):
-        intent = context.new("android.content.Intent")
-        self.__set_component_to(intent, context)
-        self.__set_extra_to(intent, context)
-        self.__set_bundle_extra_to(intent, context)
-        return intent;
        
     def __set_component_to(self, intent, context):
         if self.component != None:
@@ -114,7 +116,7 @@ class IntentTemplate:
         if self.extras != None:
             for invoc in self.extras:
                 if invoc[0] == "boolean":
-                    intent.putExtra(invoc[1], context.arg(random.choice[True, False], obj_type="boolean")) 
+                    intent.putExtra(invoc[1], context.arg(random.choice([True, False]), obj_type="boolean")) 
                 elif invoc[0] == "char":
                     intent.putExtra(invoc[1], context.arg(self.__random_str(1), obj_type="char")) 
                 elif invoc[0] == "double":
