@@ -11,7 +11,7 @@ class ListFiles(Module, common.ClassLoader, common.FileSystem):
     author = "Mark Deutel"
     date = "2018-08-03"
     license = "BSD (3-clause)"
-    path = ["utils"]
+    path = ["util"]
     
     def add_arguments(self, parser):
         parser.add_argument("target")

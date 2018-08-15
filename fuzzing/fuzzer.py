@@ -1,11 +1,12 @@
 from drozer.modules import common, Module
+from drozer.modules.common import loader
 from drozer import android
 from template import IntentTemplate
 
 import json
 import sys
 
-class IntentFuzzer(Module, common.PackageManager):
+class IntentFuzzer(Module, common.PackageManager, loader.ClassLoader):
     name = "Intent fuzzer"
     description = "Android intent fuzzing module"
     examples = ""

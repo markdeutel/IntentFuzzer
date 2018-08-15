@@ -1,2 +1,4 @@
 *.pyc
 .drozer_repository
+*.class
+*.apk
