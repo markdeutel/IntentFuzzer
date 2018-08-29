@@ -1,4 +1,5 @@
 from data import DataType, getRandomData
+import radamsa
 
 class IntentTemplate:
     def __init__(self, type="activity", component=None, extras=None, bundle=None):
@@ -13,7 +14,7 @@ class IntentTemplate:
         
         if self.extras != None:
             for extra in self.extras:
-                intentBuilder.putExtra(extra[0], extra[1])
+                intentBuilder.putExtra(extra[0], extra[1], radamsa.next(extra[0]))
                 
         if self.bundle != None:
             intentBuilder.createBundle()
@@ -21,7 +22,9 @@ class IntentTemplate:
                 intentBuilder.putBundleExtra(item[0], item[1])
             intentBuilder.applyBundleToIntent()
         
-        return intentBuilder.getIntent();
+        intent = intentBuilder.getIntent()
+        context.stdout.write("%s\n" % intent.toUri(0))
+        return intent
     
     def __print_intent(self, context):
         if self.component != None:

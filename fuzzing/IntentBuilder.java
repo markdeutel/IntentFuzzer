@@ -15,7 +15,33 @@ public class IntentBuilder
         intent.setComponent(new ComponentName(pkg, cls));
     }
     
-    public void putExtra(final String extraType, final String key)
+    public void putExtra(final String extraType, final String key, final String value)
+    {
+        final String[] extraTypeTokens = extraType.split("\\s+");
+        if (extraTypeTokens.length == 0)
+            return;
+        
+        switch(extraTypeTokens[0])
+        {
+            case "integer":
+                intent.putExtra(key, Integer.parseInt(value));
+                break;
+            case "long":
+                intent.putExtra(key, Long.parseLong(value));
+                break;
+            case "short":
+                intent.putExtra(key, Short.parseShort(value));
+                break;
+            case "string":
+                intent.putExtra(key, value);
+                break;
+            default:
+                break;
+        }
+    }
+    
+    /*
+    public void putExtra(final String extraType, final String key, final String value)
     {
         final String[] extraTypeTokens = extraType.split("\\s+");
         if (extraTypeTokens.length == 0)
@@ -77,6 +103,7 @@ public class IntentBuilder
                 break;
         }
     }
+    */
     
     public void createBundle()
     {
