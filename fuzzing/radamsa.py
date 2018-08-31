@@ -1,12 +1,17 @@
 from subprocess import Popen, PIPE, check_output, CalledProcessError
+import random
 
 def next(type):
-    if type == "integer" or type == "long" or type == "short":
-        return next_int()
-    elif type == "float" or type == "double":
-        return next_float()
-    elif type == "string":
-        return next_string("hewhfbewfbw33f")
+    count = 1
+    if "array" in type:
+        count = random.randint(1, 100)
+        
+    if "integer" in type or "long" in type or "short" in type:
+        return next_int(count)
+    elif "float" in type or "double" in type:
+        return next_float(count)
+    elif "string" in type or "char" in type or "byte" in type:
+        return next_string("hewhfbewfbw33f", count)
     return None
 
 def next_int(count=1):
@@ -20,17 +25,17 @@ def next_number(source, count=1):
     if count == 1:
         return str(run_radamsa(str(source), ["-m", "num", "-p", "od"]).strip())
     else:
-        return str(run_radamsa(str(source), ["-m", "num", "-n", str(count), "-p", "od"]).splitlines())
+        return str(run_radamsa(str(source), ["-m", "num", "-n", str(count), "-p", "od"]).replace("\n", " ").strip())
     
 def next_string(source, count=1):
     assert count >= 1
     if count == 1:
         return str(run_radamsa(str(source)))
     else:
-        output = []
+        output = ""
         for x in xrange(count):
-            output.append(str(run_radamsa(source)))
-        return output
+            output += str(run_radamsa(source)) + " "
+        return output.strip()
 
 def run_radamsa(source, args=[]):
     try:

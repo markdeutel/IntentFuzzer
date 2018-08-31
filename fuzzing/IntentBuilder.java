@@ -5,7 +5,7 @@ import android.os.Bundle;
 
 public class IntentBuilder
 {
-    private RandomGenerator random = new RandomGenerator();
+    private Random random = new Random();
     private Intent intent = null;
     private Bundle bundle = null;
     
@@ -13,104 +13,147 @@ public class IntentBuilder
     {
         intent = new Intent();
         intent.setComponent(new ComponentName(pkg, cls));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
     }
     
     public void putExtra(final String extraType, final String key, final String value)
     {
         final String[] extraTypeTokens = extraType.split("\\s+");
-        if (extraTypeTokens.length == 0)
+        if (extraTypeTokens.length <= 0)
             return;
+        
+        String[] values = null;
+        final boolean isArray = extraTypeTokens.length == 2;
+        if(isArray)
+            values = value.split("\\s+");
         
         switch(extraTypeTokens[0])
         {
             case "integer":
-                intent.putExtra(key, Integer.parseInt(value));
+                if(isArray)
+                {
+                    int intValues[] = new int[values.length];
+                    for(int i=0; i<values.length; ++i)
+                        intValues[i] = Integer.parseInt(values[i]);
+                    intent.putExtra(key, intValues);
+                }
+                else
+                {
+                    intent.putExtra(key, Integer.parseInt(value));
+                }
                 break;
             case "long":
-                intent.putExtra(key, Long.parseLong(value));
+                if(isArray)
+                {
+                    long longValues[] = new long[values.length];
+                    for(int i=0; i<values.length; ++i)
+                        longValues[i] = Long.parseLong(values[i]);
+                    intent.putExtra(key, longValues);
+                }
+                else
+                {
+                    intent.putExtra(key, Long.parseLong(value));
+                }
                 break;
             case "short":
-                intent.putExtra(key, Short.parseShort(value));
+                if(isArray)
+                {
+                    short shortValues[] = new short[values.length];
+                    for(int i=0; i<values.length; ++i)
+                        shortValues[i] = Short.parseShort(values[i]);
+                    intent.putExtra(key, shortValues);
+                }
+                else
+                {
+                    intent.putExtra(key, Short.parseShort(value));
+                }
                 break;
             case "string":
-                intent.putExtra(key, value);
-                break;
-            default:
-                break;
-        }
-    }
-    
-    /*
-    public void putExtra(final String extraType, final String key, final String value)
-    {
-        final String[] extraTypeTokens = extraType.split("\\s+");
-        if (extraTypeTokens.length == 0)
-            return;
-        
-        final boolean isArray = extraTypeTokens.length == 2;
-        
-        switch(extraTypeTokens[0])
-        {
-            case "boolean":
                 if(isArray)
-                    intent.putExtra(key, random.getBooleanArray());
+                    intent.putExtra(key, values);
                 else
-                    intent.putExtra(key, random.getBoolean());
+                    intent.putExtra(key, value);
                 break;
             case "char":
                 if(isArray)
-                    intent.putExtra(key, random.getCharArray());
+                {
+                    char charValues[] = new char[values.length];
+                    for(int i=0; i<values.length; ++i)
+                        charValues[i] = values[i].charAt(random.nextInt(values[i].length()));
+                    intent.putExtra(key, charValues);
+                }
                 else
-                    intent.putExtra(key, random.getChar());
+                {
+                    intent.putExtra(key, value.charAt(random.nextInt(value.length())));
+                }
                 break;
-            case "double":
+            case "byte":
                 if(isArray)
-                    intent.putExtra(key, random.getDoubleArray());
+                {
+                    byte byteValues[] = new byte[values.length];
+                    for(int i=0; i<values.length; ++i)
+                    {
+                        byte[] bytes = values[i].getBytes();
+                        byteValues[i] = bytes[random.nextInt(bytes.length)];
+                    }
+                    intent.putExtra(key, byteValues);
+                }
                 else
-                    intent.putExtra(key, random.getDouble());
+                {
+                    byte[] bytes = value.getBytes();
+                    intent.putExtra(key, bytes[random.nextInt(bytes.length)]);
+                }
+                break;
+            case "boolean":
+                if(isArray)
+                {
+                    boolean boolArray[] = new boolean[random.nextInt(100) + 1];
+                    for(int i=0; i<boolArray.length; ++i)
+                        boolArray[i] = random.nextBoolean();
+                    intent.putExtra(key, boolArray);
+                }
+                else
+                {
+                    intent.putExtra(key, random.nextBoolean());
+                }
                 break;
             case "float":
                 if(isArray)
-                    intent.putExtra(key, random.getFloatArray());
+                {
+                    float floatArray[] = new float[random.nextInt(100) + 1];
+                    for(int i=0; i<floatArray.length; ++i)
+                        floatArray[i] = Float.parseFloat(values[i]);
+                    intent.putExtra(key, floatArray);
+                }
                 else
-                    intent.putExtra(key, random.getFloat());
+                {
+                    intent.putExtra(key, Float.parseFloat(value));
+                }
                 break;
-            case "integer":
+            case "double":
                 if(isArray)
-                    intent.putExtra(key, random.getIntArray());
+                {
+                    double doubleArray[] = new double[random.nextInt(100) + 1];
+                    for(int i=0; i<doubleArray.length; ++i)
+                        doubleArray[i] = Double.parseDouble(values[i]);
+                    intent.putExtra(key, doubleArray);
+                }
                 else
-                    intent.putExtra(key, random.getInt());
-                break;
-            case "long":
-                if(isArray)
-                    intent.putExtra(key, random.getLongArray());
-                else
-                    intent.putExtra(key, random.getLong());
-                break;
-            case "short":
-                if(isArray)
-                    intent.putExtra(key, random.getShortArray());
-                else
-                    intent.putExtra(key, random.getShort());
-                break;
-            case "string":
-                if(isArray)
-                    intent.putExtra(key, random.getStringArray());
-                else
-                    intent.putExtra(key, random.getString());
+                {
+                    intent.putExtra(key, Double.parseDouble(value));
+                }
                 break;
             default:
                 break;
         }
     }
-    */
     
     public void createBundle()
     {
         bundle = new Bundle();
     }
     
-    public void putBundleExtra(final String extraType, final String key)
+    public void putBundleExtra(final String extraType, final String key, final String value)
     {
         final String[] extraTypeTokens = extraType.split("\\s+");
         if (extraTypeTokens.length == 0)
@@ -120,53 +163,33 @@ public class IntentBuilder
         
         switch(extraTypeTokens[0])
         {
-            case "boolean":
-                if(isArray)
-                    bundle.putBooleanArray(key, random.getBooleanArray());
-                else
-                    bundle.putBoolean(key, random.getBoolean());
-                break;
-            case "char":
-                if(isArray)
-                    bundle.putCharArray(key, random.getCharArray());
-                else
-                    bundle.putChar(key, random.getChar());
-                break;
-            case "double":
-                if(isArray)
-                    bundle.putDoubleArray(key, random.getDoubleArray());
-                else
-                    bundle.putDouble(key, random.getDouble());
-                break;
-            case "float":
-                if(isArray)
-                    bundle.putFloatArray(key, random.getFloatArray());
-                else
-                    bundle.putFloat(key, random.getFloat());
-                break;
             case "integer":
-                if(isArray)
-                    bundle.putIntArray(key, random.getIntArray());
-                else
-                    bundle.putInt(key, random.getInt());
+                bundle.putInt(key, Integer.parseInt(value));
                 break;
             case "long":
-                if(isArray)
-                    bundle.putLongArray(key, random.getLongArray());
-                else
-                    bundle.putLong(key, random.getLong());
+                bundle.putLong(key, Long.parseLong(value));
                 break;
             case "short":
-                if(isArray)
-                    bundle.putShortArray(key, random.getShortArray());
-                else
-                    bundle.putShort(key, random.getShort());
+                bundle.putShort(key, Short.parseShort(value));
                 break;
             case "string":
-                if(isArray)
-                    bundle.putStringArray(key, random.getStringArray());
-                else
-                    bundle.putString(key, random.getString());
+                bundle.putString(key, value);
+                break;
+            case "char":
+                bundle.putChar(key, value.charAt(random.nextInt(value.length())));
+                break;
+            case "byte":
+                byte[] bytes = value.getBytes();
+                bundle.putByte(key, bytes[random.nextInt(bytes.length)]);
+                break;
+            case "boolean":
+                bundle.putBoolean(key, random.nextBoolean());
+                break;
+            case "float":
+                bundle.putFloat(key, Float.parseFloat(value));
+                break;
+            case "double":
+                bundle.putDouble(key, Double.parseDouble(value));
                 break;
             default:
                 break;
@@ -181,129 +204,5 @@ public class IntentBuilder
     public Intent getIntent()
     {
         return intent;
-    }
-        
-    public class RandomGenerator
-    {
-        private static final String ASCII = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        private Random random = new Random();
-        
-        public int getInt()
-        {
-            return random.nextInt();
-        }
-        
-        public short getShort()
-        {
-            return (short)random.nextInt(Short.MAX_VALUE + 1);
-        }
-        
-        public long getLong()
-        {
-            return random.nextLong();
-        }
-        
-        public char getChar()
-        {
-            return ASCII.charAt(random.nextInt(ASCII.length()));
-        }
-        
-        public String getString()
-        {
-            int len = 1 + random.nextInt(100);
-            final StringBuilder sb = new StringBuilder();
-            for (int i=0; i<len; ++i)
-            {
-                sb.append(getChar());
-            }
-            return sb.toString();
-        }
-        
-        public boolean getBoolean()
-        {
-            return random.nextBoolean();
-        }
-        
-        public float getFloat()
-        {
-            return random.nextFloat();
-        }
-        
-        public double getDouble()
-        {
-            return random.nextDouble();
-        }
-        
-        public int[] getIntArray()
-        {
-            int len = 1 + random.nextInt(100);
-            int[] array = new int[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getInt();
-            return array;
-        }
-        
-        public short[] getShortArray()
-        {
-            int len = 1 + random.nextInt(100);
-            short[] array = new short[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getShort();
-            return array;
-        }
-        
-        public long[] getLongArray()
-        {
-            int len = 1 + random.nextInt(100);
-            long[] array = new long[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getLong();
-            return array;
-        }
-        
-        public char[] getCharArray()
-        {
-            int len = 1 + random.nextInt(100);
-            char[] array = new char[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getChar();
-            return array;
-        }
-        
-        public String[] getStringArray()
-        {
-            int len = 1 + random.nextInt(100);
-            String[] array = new String[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getString();
-            return array;
-        }
-        
-        public boolean[] getBooleanArray()
-        {
-            int len = 1 + random.nextInt(100);
-            boolean[] array = new boolean[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getBoolean();
-            return array;
-        }
-        
-        public float[] getFloatArray()
-        {
-            int len = 1 + random.nextInt(100);
-            float[] array = new float[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getFloat();
-            return array;
-        }
-        
-        public double[] getDoubleArray()
-        {
-            int len = 1 + random.nextInt(100);
-            double[] array = new double[len];
-            for (int i=0; i<len; ++i)
-                array[i] = getDouble();
-            return array;
-        }
     }
 }
