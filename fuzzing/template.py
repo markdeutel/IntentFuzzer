@@ -75,7 +75,7 @@ class IntentTemplate:
             intentBuilder.applyBundleToIntent()
         
         intent = intentBuilder.getIntent()
-        context.stdout.write("%s\n" % intent.toUri(0))
+        context.stdout.write("[color blue]%s[/color]\n" % intent.toUri(0))
         return intent
     
     def __print_intent(self, context):
