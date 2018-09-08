@@ -19,22 +19,32 @@ class Fuzzer(Module, loader.ClassLoader):
         parser.add_argument("-s", "--staticData", help="specify a path on your local machine to the static data file.")
 
     def execute(self, arguments):
-        # build the intent templates
+        # get static data from file
         templates = []
         dataStore = self.__load_data_store(arguments.staticData)
         packageManager = FuzzerPackageManager(self)
+        
+        # build the intent templates
         for receiver in packageManager.get_receivers(arguments.packageName):
-            templates.append(self.__build_template(dataStore, "receiver", (arguments.packageName, receiver)))
+            templates.append(self.__build_template(dataStore, receiver, "receiver", (arguments.packageName, receiver)))
+
+        # activities might have an alias name declared for them. If this is true, the all found static data for this component 
+        # is located under the real name not the alias
         for activity in packageManager.get_activities(arguments.packageName):
-            templates.append(self.__build_template(dataStore, "activity", (arguments.packageName, activity)))
+            if str(activity.targetActivity) != "null":
+                templates.append(self.__build_template(dataStore, str(activity.targetActivity), "activity", (arguments.packageName, str(activity.name))))
+            else:
+                templates.append(self.__build_template(dataStore, str(activity.name), "activity", (arguments.packageName, str(activity.name))))
+
         for service in packageManager.get_services(arguments.packageName):
-            templates.append(self.__build_template(dataStore, "service", (arguments.packageName, service)))
-        # send all intent
+            templates.append(self.__build_template(dataStore, service, "service", (arguments.packageName, service)))
+
+        # send all intents
         for template in templates:
             template.send(self)
     
-    def __build_template(self, dataStore, type, component):
-        staticData = json.dumps(dataStore.get(component[1], "{}"))
+    def __build_template(self, dataStore, locator, type, component):
+        staticData = json.dumps(dataStore.get(locator, "{}"))
         return IntentTemplate(staticData, type, component)
     
     def __load_data_store(self, filePath):
@@ -51,14 +61,16 @@ class IntentTemplate:
         self.component = component
         self.type = type
         
-    def __build_intent(self, context):
-        IntentBuilder = context.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
-        return IntentBuilder.build(self.component[0], self.component[1], self.staticData)
-        
     def send(self, context):
         try:
-            intent = self.__build_intent(context)
-            context.stdout.write("[color blue]%s[/color]\n" % intent.toUri(0))
+            IntentBuilder = context.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
+            intent = IntentBuilder.build(self.component[0], self.component[1], self.staticData, "{}")
+            
+            context.stdout.write("[color blue]%s[/color]\n" % intent.toString())
+            extraStr = IntentBuilder.getExtrasString(intent)
+            if str(extraStr) != "null":
+                context.stdout.write("[color green]%s[/color]\n" % extraStr)
+            
             if self.type == "receiver":
                 context.getContext().sendBroadcast(intent)
             elif self.type == "activity":
@@ -73,7 +85,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
     def get_receivers(self, packageNameString):
         receivers = self.packageManager().getPackageInfo(packageNameString,
                                                          self.packageManager().GET_RECEIVERS).receivers
-        if (str(receivers) == 'null'):
+        if str(receivers) == "null":
             return None
         else:
             result = []
@@ -84,18 +96,15 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
     def get_activities(self, packageNameString):
         activities = self.packageManager().getPackageInfo(packageNameString,
                                                          self.packageManager().GET_ACTIVITIES).activities
-        if (str(activities) == 'null'):
+        if str(activities) == "null":
             return None
         else:
-            result = []
-            for activity in activities:
-                result.append(str(activity.name))
-            return result
+            return activities
         
     def get_services(self, packageNameString):
         services = self.packageManager().getPackageInfo(packageNameString,
                                                          self.packageManager().GET_SERVICES).services
-        if (str(services) == 'null'):
+        if str(services) == "null":
             return None
         else:
             result = []

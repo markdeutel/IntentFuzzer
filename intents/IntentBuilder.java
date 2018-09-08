@@ -22,7 +22,7 @@ public class IntentBuilder
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
             
             // unpack random values for the intent extras
-            final JSONObject values = new JSONObject(valueStr.substring(dataStr.indexOf('{'), dataStr.lastIndexOf('}') + 1));
+            //final JSONObject values = new JSONObject(valueStr.substring(dataStr.indexOf('{'), dataStr.lastIndexOf('}') + 1));
             
             // set provided extras
             final JSONObject staticData = new JSONObject(dataStr.substring(dataStr.indexOf('{'), dataStr.lastIndexOf('}') + 1));
@@ -47,26 +47,47 @@ public class IntentBuilder
         }
     }
         
+    public static String getExtrasString(final Intent intent)
+    {
+        String result = null;
+        final Bundle extras = intent.getExtras();
+        if (extras != null && extras.keySet().size() != 0)
+        {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("Intent: ");
+            for (String key : extras.keySet()) 
+            {
+                Object value = extras.get(key);
+                sb.append(key).append("=").append(value).append(", ");
+            }
+            result = sb.toString();
+        }
+        return result;
+    }
+        
     private static void putIntentExtras(Intent intent, JSONObject intentInvocations, List<String> bundleNames) throws JSONException
     {
         final JSONArray methods = intentInvocations.names();
-        for (int i=0; i<methods.length(); ++i)
+        if (methods != null)
         {
-            boolean isBundleMethod = false;
-            final String methodName = methods.getString(i);
-            if (methodName.equals("getBundleExtra"))
-                isBundleMethod = true;
-            
-            final JSONArray keys = intentInvocations.getJSONArray(methodName);
-            for (int j=0; j<keys.length(); ++j)
+            for (int i=0; i<methods.length(); ++i)
             {
-                final String key = keys.getString(j);
-                if (!key.isEmpty())
+                boolean isBundleMethod = false;
+                final String methodName = methods.getString(i);
+                if (methodName.equals("getBundleExtra"))
+                    isBundleMethod = true;
+                
+                final JSONArray keys = intentInvocations.getJSONArray(methodName);
+                for (int j=0; j<keys.length(); ++j)
                 {
-                    if (isBundleMethod)
-                        bundleNames.add(key);
-                    else
-                        intent.putExtra(key, "dummydummytesttest");
+                    final String key = keys.getString(j);
+                    if (!key.isEmpty())
+                    {
+                        if (isBundleMethod)
+                            bundleNames.add(key);
+                        else
+                            intent.putExtra(key, "dummydummytesttest");
+                    }
                 }
             }
         }
@@ -76,14 +97,17 @@ public class IntentBuilder
     {
         final Bundle bundle = new Bundle();
         final JSONArray methods = bundleInvocations.names();
-        for (int i=0; i<methods.length(); ++i)
+        if (methods != null)
         {
-            final JSONArray keys = bundleInvocations.getJSONArray(methods.getString(i));
-            for (int j=0; j<keys.length(); ++j)
+            for (int i=0; i<methods.length(); ++i)
             {
-                final String key = keys.getString(j);
-                if (!key.isEmpty())
-                    bundle.putString(key, "dummydummytesttest");
+                final JSONArray keys = bundleInvocations.getJSONArray(methods.getString(i));
+                for (int j=0; j<keys.length(); ++j)
+                {
+                    final String key = keys.getString(j);
+                    if (!key.isEmpty())
+                        bundle.putString(key, "dummydummytesttest");
+                }
             }
         }
             
