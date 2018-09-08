@@ -1,6 +1,7 @@
 from drozer.modules import common, Module
 from drozer.modules.common import loader
 
+import logcat
 import json
 import sys
 
@@ -17,6 +18,8 @@ class Fuzzer(Module, loader.ClassLoader):
     def add_arguments(self, parser):
         parser.add_argument("-p", "--packageName", help="specify the package which should be attacked.")
         parser.add_argument("-s", "--staticData", help="specify a path on your local machine to the static data file.")
+        parser.add_argument("-o", "--logcatOutputPath", help="specify a path on your local machine where all logcat output is dumped.")
+        parser.add_argument("-n", "--numIter", help="specify the number of itertaion a campaign against a package should take")
 
     def execute(self, arguments):
         # get static data from file
@@ -40,8 +43,12 @@ class Fuzzer(Module, loader.ClassLoader):
             templates.append(self.__build_template(dataStore, service, "service", (arguments.packageName, service)))
 
         # send all intents
-        for template in templates:
-            template.send(self)
+        logcat.flush_logcat(self)
+        IntentBuilder = self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
+        for i in xrange(int(arguments.numIter)):
+            for template in templates:
+                template.send(self, IntentBuilder)
+        logcat.dump_logcat(self, arguments.logcatOutputPath)
     
     def __build_template(self, dataStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
@@ -61,13 +68,13 @@ class IntentTemplate:
         self.component = component
         self.type = type
         
-    def send(self, context):
+    def send(self, context, IntentBuilder):
         try:
-            IntentBuilder = context.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
-            intent = IntentBuilder.build(self.component[0], self.component[1], self.staticData, "{}")
+            intentBuilder = context.new(IntentBuilder)
+            intent = intentBuilder.build(self.component[0], self.component[1], self.staticData)
             
             context.stdout.write("[color blue]%s[/color]\n" % intent.toString())
-            extraStr = IntentBuilder.getExtrasString(intent)
+            extraStr = intentBuilder.getExtrasString(intent)
             if str(extraStr) != "null":
                 context.stdout.write("[color green]%s[/color]\n" % extraStr)
             

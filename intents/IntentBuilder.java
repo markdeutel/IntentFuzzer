@@ -10,9 +10,14 @@ import android.util.Log;
 import java.util.List;
 import java.util.ArrayList;
 
+import java.util.Random;
+import java.nio.charset.Charset;
+
 public class IntentBuilder
 {
-    public static Intent build(final String pkg, final String cls, final String dataStr, final String valueStr)
+    private Random random = new Random();
+    
+    public Intent build(final String pkg, final String cls, final String dataStr)
     {
         try
         {
@@ -20,9 +25,6 @@ public class IntentBuilder
             final Intent intent = new Intent();
             intent.setComponent(new ComponentName(pkg, cls));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-            
-            // unpack random values for the intent extras
-            //final JSONObject values = new JSONObject(valueStr.substring(dataStr.indexOf('{'), dataStr.lastIndexOf('}') + 1));
             
             // set provided extras
             final JSONObject staticData = new JSONObject(dataStr.substring(dataStr.indexOf('{'), dataStr.lastIndexOf('}') + 1));
@@ -47,25 +49,24 @@ public class IntentBuilder
         }
     }
         
-    public static String getExtrasString(final Intent intent)
+    public String getExtrasString(final Intent intent)
     {
         String result = null;
         final Bundle extras = intent.getExtras();
         if (extras != null && extras.keySet().size() != 0)
         {
             final StringBuilder sb = new StringBuilder();
-            sb.append("Intent: ");
+            sb.append("Extras: ");
             for (String key : extras.keySet()) 
             {
-                Object value = extras.get(key);
-                sb.append(key).append("=").append(value).append(", ");
+                sb.append(key).append(", ");
             }
             result = sb.toString();
         }
         return result;
     }
         
-    private static void putIntentExtras(Intent intent, JSONObject intentInvocations, List<String> bundleNames) throws JSONException
+    private void putIntentExtras(Intent intent, JSONObject intentInvocations, List<String> bundleNames) throws JSONException
     {
         final JSONArray methods = intentInvocations.names();
         if (methods != null)
@@ -86,14 +87,14 @@ public class IntentBuilder
                         if (isBundleMethod)
                             bundleNames.add(key);
                         else
-                            intent.putExtra(key, "dummydummytesttest");
+                            putTwistedIntentExtra(intent, key);
                     }
                 }
             }
         }
     }
             
-    private static void putBundleExtras(Intent intent, JSONObject bundleInvocations, String bundleName) throws JSONException
+    private void putBundleExtras(Intent intent, JSONObject bundleInvocations, String bundleName) throws JSONException
     {
         final Bundle bundle = new Bundle();
         final JSONArray methods = bundleInvocations.names();
@@ -106,7 +107,7 @@ public class IntentBuilder
                 {
                     final String key = keys.getString(j);
                     if (!key.isEmpty())
-                        bundle.putString(key, "dummydummytesttest");
+                        putTwistedBundleExtra(bundle, key);
                 }
             }
         }
@@ -115,5 +116,53 @@ public class IntentBuilder
             intent.putExtras(bundle);
         else
             intent.putExtra(bundleName, bundle);
+    }
+                
+    private void putTwistedIntentExtra(Intent intent, String key)
+    {
+        int pick = random.nextInt(4);
+        switch(pick)
+        {
+            case 0: // string
+                intent.putExtra(key, nextRandomString());
+                break;
+            case 1: // integer
+                intent.putExtra(key, random.nextInt());
+                break;
+            case 2: // float
+                intent.putExtra(key, random.nextFloat());
+                break;
+            case 3: // boolean
+                intent.putExtra(key, random.nextBoolean());
+                break;
+        }
+    }
+        
+    private void putTwistedBundleExtra(Bundle bundle, String key)
+    {
+        int pick = random.nextInt(4);
+        switch(pick)
+        {
+            case 0: // string
+                bundle.putString(key, nextRandomString());
+                break;
+            case 1: // integer
+                bundle.putInt(key, random.nextInt());
+                break;
+            case 2: // float
+                bundle.putFloat(key, random.nextFloat());
+                break;
+            case 3: // boolean
+                bundle.putBoolean(key, random.nextBoolean());
+                break;
+        }
+    }
+                
+    private String nextRandomString()
+    {
+        int length = random.nextInt(100) + 10;
+        byte[] arr = new byte[length];
+        random.nextBytes(arr);
+        return new String(arr, Charset.forName("UTF-8"));
     }
 }
