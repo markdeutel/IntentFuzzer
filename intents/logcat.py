@@ -3,7 +3,7 @@ from os import path
 
 def write_log_entry(context, msg):
     Log = context.klass("android.util.Log")
-    Log.i("FUZZER", msg)
+    Log.i("IntentFuzzer", msg)
     
 def flush_logcat(context):
     try:

@@ -17,7 +17,7 @@ public class IntentBuilder
 {
     private Random random = new Random();
     
-    public Intent build(final String pkg, final String cls, final String dataStr)
+    public Intent build(final String pkg, final String cls, final String dataStr, final String metaStr)
     {
         try
         {
@@ -26,13 +26,35 @@ public class IntentBuilder
             intent.setComponent(new ComponentName(pkg, cls));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
             
+            // set provided meta data
+            final JSONObject metaData = new JSONObject(metaStr.substring(metaStr.indexOf('{'), metaStr.lastIndexOf('}') + 1));
+            if (metaData.length() > 0)
+            {
+                // set actions
+                final JSONArray actions = metaData.getJSONArray("actions");
+                final List<String> actionsList = new ArrayList<>();
+                for (int i=0; i<actions.length(); ++i)
+                    actionsList.add(actions.getString(i));
+                if (actionsList.size() > 0)
+                    intent.setAction(actionsList.get(random.nextInt(actionsList.size())));
+                    
+                // set categories
+                final JSONArray categories = metaData.getJSONArray("categories");
+                final List<String> categoryList = new ArrayList<>();
+                for (int i=0; i<categories.length(); ++i)
+                    intent.addCategory(categories.getString(i));
+                    
+                // set data
+                final JSONArray data = metaData.getJSONArray("data");
+            }
+
             // set provided extras
             final JSONObject staticData = new JSONObject(dataStr.substring(dataStr.indexOf('{'), dataStr.lastIndexOf('}') + 1));
-            if (staticData.length() != 0)
+            if (staticData.length() > 0)
             {
                 final JSONObject intentInvocations = staticData.getJSONObject("intentInvocations");
                 final JSONObject bundleInvocations = staticData.getJSONObject("bundleInvocations");
-             
+
                 final List<String> bundleNames = new ArrayList<>();
                 putIntentExtras(intent, intentInvocations, bundleNames);
                 putBundleExtras(intent, bundleInvocations, null);

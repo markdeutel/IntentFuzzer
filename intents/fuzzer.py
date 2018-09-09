@@ -1,5 +1,6 @@
 from drozer.modules import common, Module
 from drozer.modules.common import loader
+from time import sleep
 
 import logcat
 import json
@@ -24,23 +25,28 @@ class Fuzzer(Module, loader.ClassLoader):
     def execute(self, arguments):
         # get static data from file
         templates = []
-        dataStore = self.__load_data_store(arguments.staticData)
+        dataStore = self.__load_json(arguments.staticData + arguments.packageName + ".json")
+        metaStore = self.__load_json(arguments.staticData + arguments.packageName + ".meta")
         packageManager = FuzzerPackageManager(self)
         
         # build the intent templates
         for receiver in packageManager.get_receivers(arguments.packageName):
-            templates.append(self.__build_template(dataStore, receiver, "receiver", (arguments.packageName, receiver)))
+            templates.append(self.__build_template(dataStore, metaStore, str(receiver.name), 
+                                                   "receiver", (arguments.packageName, str(receiver.name))))
 
         # activities might have an alias name declared for them. If this is true, the all found static data for this component 
         # is located under the real name not the alias
         for activity in packageManager.get_activities(arguments.packageName):
             if str(activity.targetActivity) != "null":
-                templates.append(self.__build_template(dataStore, str(activity.targetActivity), "activity", (arguments.packageName, str(activity.name))))
+                templates.append(self.__build_template(dataStore, metaStore, str(activity.targetActivity), 
+                                                       "activity", (arguments.packageName, str(activity.name))))
             else:
-                templates.append(self.__build_template(dataStore, str(activity.name), "activity", (arguments.packageName, str(activity.name))))
+                templates.append(self.__build_template(dataStore, metaStore, str(activity.name), 
+                                                       "activity", (arguments.packageName, str(activity.name))))
 
         for service in packageManager.get_services(arguments.packageName):
-            templates.append(self.__build_template(dataStore, service, "service", (arguments.packageName, service)))
+            templates.append(self.__build_template(dataStore, metaStore, str(service.name), 
+                                                   "service", (arguments.packageName, str(service.name))))
 
         # send all intents
         logcat.flush_logcat(self)
@@ -48,13 +54,15 @@ class Fuzzer(Module, loader.ClassLoader):
         for i in xrange(int(arguments.numIter)):
             for template in templates:
                 template.send(self, IntentBuilder)
+                sleep(1)
         logcat.dump_logcat(self, arguments.logcatOutputPath)
     
-    def __build_template(self, dataStore, locator, type, component):
+    def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
-        return IntentTemplate(staticData, type, component)
+        metaData = json.dumps(metaStore.get(locator, "{}"))
+        return IntentTemplate(staticData, metaData, type, component)
     
-    def __load_data_store(self, filePath):
+    def __load_json(self, filePath):
         try:
             with open(filePath, 'r') as file:
                 return json.load(file)
@@ -63,16 +71,18 @@ class Fuzzer(Module, loader.ClassLoader):
     
 class IntentTemplate:
     
-    def __init__(self, staticData, type, component):
+    def __init__(self, staticData, metaData, type, component):
         self.staticData = staticData
+        self.metaData = metaData
         self.component = component
         self.type = type
         
     def send(self, context, IntentBuilder):
         try:
             intentBuilder = context.new(IntentBuilder)
-            intent = intentBuilder.build(self.component[0], self.component[1], self.staticData)
+            intent = intentBuilder.build(self.component[0], self.component[1], self.staticData, self.metaData)
             
+            logcat.write_log_entry(context, "Execute order 66: " + str(intent.toString()))
             context.stdout.write("[color blue]%s[/color]\n" % intent.toString())
             extraStr = intentBuilder.getExtrasString(intent)
             if str(extraStr) != "null":
@@ -95,10 +105,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
         if str(receivers) == "null":
             return None
         else:
-            result = []
-            for receiver in receivers:
-                result.append(str(receiver.name))
-            return result
+            return receivers
         
     def get_activities(self, packageNameString):
         activities = self.packageManager().getPackageInfo(packageNameString,
@@ -114,7 +121,4 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
         if str(services) == "null":
             return None
         else:
-            result = []
-            for service in services:
-                result.append(str(service.name))
-            return result
+            return services
