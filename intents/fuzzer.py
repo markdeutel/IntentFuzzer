@@ -1,5 +1,7 @@
 from drozer.modules import common, Module
 from drozer.modules.common import loader
+
+from os import path
 from time import sleep
 
 import logcat
@@ -18,15 +20,18 @@ class Fuzzer(Module, loader.ClassLoader):
 
     def add_arguments(self, parser):
         parser.add_argument("-p", "--packageName", help="specify the package which should be attacked.")
-        parser.add_argument("-s", "--staticData", help="specify a folder on your local machine where all static data is stored.")
-        parser.add_argument("-o", "--logcatOutput", help="specify a folder on your local machine where all logcat output is dumped.")
         parser.add_argument("-n", "--numIter", help="specify the number of itertaion a campaign against a package should take")
 
     def execute(self, arguments):
+        # read cofig
+        config = self.__load_json(path.abspath(path.dirname(__file__)) + "/config.json")
+        dataStorePath = path.expanduser(config.get("dataStore", path.abspath(path.dirname(__file__))))
+        outputPath = path.expanduser(config.get("outputFolder", path.abspath(path.dirname(__file__))))
+        
         # get static data from file
         templates = []
-        dataStore = self.__load_json(arguments.staticData + arguments.packageName + ".json")
-        metaStore = self.__load_json(arguments.staticData + arguments.packageName + ".meta")
+        dataStore = self.__load_json(dataStorePath + arguments.packageName + ".json")
+        metaStore = self.__load_json(dataStorePath + arguments.packageName + ".meta")
         packageManager = FuzzerPackageManager(self)
         
         # build the intent templates
@@ -55,7 +60,7 @@ class Fuzzer(Module, loader.ClassLoader):
             for template in templates:
                 template.send(self, IntentBuilder)
                 sleep(1)
-        logcat.dump_logcat(self, arguments.logcatOutput + arguments.packageName + ".log")
+        logcat.dump_logcat(self, outputPath + arguments.packageName + ".log")
     
     def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
