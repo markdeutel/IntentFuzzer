@@ -1,6 +1,7 @@
 import android.content.Intent;
 import android.content.ComponentName;
 import android.os.Bundle;
+import 	android.net.Uri;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -13,6 +14,9 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.nio.charset.Charset;
 
+/**
+* @author Mark Deutel
+*/
 public class IntentBuilder
 {
     private Random random = new Random();
@@ -30,22 +34,42 @@ public class IntentBuilder
             final JSONObject metaData = new JSONObject(metaStr.substring(metaStr.indexOf('{'), metaStr.lastIndexOf('}') + 1));
             if (metaData.length() > 0)
             {
-                // set actions
-                final JSONArray actions = metaData.getJSONArray("actions");
-                final List<String> actionsList = new ArrayList<>();
-                for (int i=0; i<actions.length(); ++i)
-                    actionsList.add(actions.getString(i));
-                if (actionsList.size() > 0)
-                    intent.setAction(actionsList.get(random.nextInt(actionsList.size())));
-                    
-                // set categories
-                final JSONArray categories = metaData.getJSONArray("categories");
-                final List<String> categoryList = new ArrayList<>();
-                for (int i=0; i<categories.length(); ++i)
-                    intent.addCategory(categories.getString(i));
-                    
-                // set data
-                final JSONArray data = metaData.getJSONArray("data");
+                // If getAction() or getCategories() or getData is called and no action or category is set in the intent, null is returned.
+                // So we definitly want to try setting no action or category at all.
+                if (random.nextBoolean())
+                {
+                    // set actions
+                    final JSONArray actions = metaData.getJSONArray("actions");
+                    final List<String> actionsList = new ArrayList<>();
+                    for (int i=0; i<actions.length(); ++i)
+                        actionsList.add(actions.getString(i));
+                    if (actionsList.size() > 0)
+                        intent.setAction(actionsList.get(random.nextInt(actionsList.size())));
+                }
+                
+                if (random.nextBoolean())
+                {
+                    // set categories
+                    final JSONArray categories = metaData.getJSONArray("categories");
+                    final List<String> categoryList = new ArrayList<>();
+                    for (int i=0; i<categories.length(); ++i)
+                        intent.addCategory(categories.getString(i));
+                }
+                
+                if (random.nextBoolean())
+                {
+                    // set data
+                    final JSONArray data = metaData.getJSONArray("data");
+                    final List<String> dataList = new ArrayList<>();
+                    for (int i=0; i<data.length(); ++i)
+                        dataList.add(data.getString(i));
+                    if (dataList.size() > 0)
+                    {
+                        String dataUri = dataList.get(random.nextInt(dataList.size()));
+                        dataUri = dataUri.replaceAll("%s", nextRandomString());
+                        intent.setData(Uri.parse(dataUri));
+                    }
+                }
             }
 
             // set provided extras
@@ -179,12 +203,14 @@ public class IntentBuilder
                 break;
         }
     }
-                
+               
+    private static final String DATA = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
     private String nextRandomString()
     {
         int length = random.nextInt(100) + 10;
-        byte[] arr = new byte[length];
-        random.nextBytes(arr);
-        return new String(arr, Charset.forName("UTF-8"));
+        final StringBuilder sb = new StringBuilder();
+        for (int i=0; i<length; ++i)
+            sb.append(DATA.charAt(random.nextInt(DATA.length())));
+        return sb.toString();
     }
 }

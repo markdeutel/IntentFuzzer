@@ -18,8 +18,8 @@ class Fuzzer(Module, loader.ClassLoader):
 
     def add_arguments(self, parser):
         parser.add_argument("-p", "--packageName", help="specify the package which should be attacked.")
-        parser.add_argument("-s", "--staticData", help="specify a path on your local machine to the static data file.")
-        parser.add_argument("-o", "--logcatOutputPath", help="specify a path on your local machine where all logcat output is dumped.")
+        parser.add_argument("-s", "--staticData", help="specify a folder on your local machine where all static data is stored.")
+        parser.add_argument("-o", "--logcatOutput", help="specify a folder on your local machine where all logcat output is dumped.")
         parser.add_argument("-n", "--numIter", help="specify the number of itertaion a campaign against a package should take")
 
     def execute(self, arguments):
@@ -49,13 +49,13 @@ class Fuzzer(Module, loader.ClassLoader):
                                                    "service", (arguments.packageName, str(service.name))))
 
         # send all intents
-        logcat.flush_logcat(self)
         IntentBuilder = self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
+        logcat.flush_logcat(self)
         for i in xrange(int(arguments.numIter)):
             for template in templates:
                 template.send(self, IntentBuilder)
                 sleep(1)
-        logcat.dump_logcat(self, arguments.logcatOutputPath)
+        logcat.dump_logcat(self, arguments.logcatOutput + arguments.packageName + ".log")
     
     def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
@@ -82,7 +82,6 @@ class IntentTemplate:
             intentBuilder = context.new(IntentBuilder)
             intent = intentBuilder.build(self.component[0], self.component[1], self.staticData, self.metaData)
             
-            logcat.write_log_entry(context, "Execute order 66: " + str(intent.toString()))
             context.stdout.write("[color blue]%s[/color]\n" % intent.toString())
             extraStr = intentBuilder.getExtrasString(intent)
             if str(extraStr) != "null":
