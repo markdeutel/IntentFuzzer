@@ -5,6 +5,7 @@ from os import path
 from time import sleep
 
 import logcat
+import logparser
 import json
 import sys
 
@@ -61,10 +62,8 @@ class Fuzzer(Module, loader.ClassLoader):
             for template in templates:
                 template.send(self, IntentBuilder)
                 sleep(1)
-                
-        mainFilePath = outputPath + arguments.packageName + ".application" + ".log"
-        crashFilePath = outputPath + arguments.packageName + ".crash" + ".log"
-        logcat.dump_logcat(self, androidSDK, mainFilePath, crashFilePath)
+        logcat.dump_logcat(self, androidSDK, outputPath + arguments.packageName + ".log")
+        logparser.parse(outputPath + arguments.packageName + ".log", outputPath + arguments.packageName + ".json")
     
     def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
@@ -95,6 +94,7 @@ class IntentTemplate:
             extraStr = intentBuilder.getExtrasString(intent)
             if str(extraStr) != "null":
                 context.stdout.write("[color green]%s[/color]\n" % extraStr)
+            logcat.write_log_entry(context, intent.toString())
             
             if self.type == "receiver":
                 context.getContext().sendBroadcast(intent)
