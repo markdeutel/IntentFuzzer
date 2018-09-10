@@ -1,4 +1,5 @@
 {
     "dataStore": "~/deepthought/bachelor/AndroidApks/datastore/",
-    "outputFolder": "~/deepthought/bachelor/AndroidApks/output/"
+    "outputFolder": "~/deepthought/bachelor/AndroidApks/output/",
+    "androidSDK": "~/Android/Sdk/"
 }

@@ -27,6 +27,7 @@ class Fuzzer(Module, loader.ClassLoader):
         config = self.__load_json(path.abspath(path.dirname(__file__)) + "/config.json")
         dataStorePath = path.expanduser(config.get("dataStore", path.abspath(path.dirname(__file__))))
         outputPath = path.expanduser(config.get("outputFolder", path.abspath(path.dirname(__file__))))
+        androidSDK = path.expanduser(config.get("androidSDK", "~/Android/SDK"))
         
         # get static data from file
         templates = []
@@ -36,31 +37,31 @@ class Fuzzer(Module, loader.ClassLoader):
         
         # build the intent templates
         for receiver in packageManager.get_receivers(arguments.packageName):
-            templates.append(self.__build_template(dataStore, metaStore, str(receiver.name), 
-                                                   "receiver", (arguments.packageName, str(receiver.name))))
+            receiverName = str(receiver.name).encode("utf-8")
+            templates.append(self.__build_template(dataStore, metaStore, receiverName, "receiver", (arguments.packageName, receiverName)))
 
         # activities might have an alias name declared for them. If this is true, the all found static data for this component 
         # is located under the real name not the alias
         for activity in packageManager.get_activities(arguments.packageName):
-            if str(activity.targetActivity) != "null":
-                templates.append(self.__build_template(dataStore, metaStore, str(activity.targetActivity), 
-                                                       "activity", (arguments.packageName, str(activity.name))))
+            targetActivityName = str(activity.targetActivity).encode("utf-8")
+            activityName = str(activity.name).encode("utf-8")
+            if targetActivityName != "null":
+                templates.append(self.__build_template(dataStore, metaStore, targetActivityName, "activity", (arguments.packageName, activityName)))
             else:
-                templates.append(self.__build_template(dataStore, metaStore, str(activity.name), 
-                                                       "activity", (arguments.packageName, str(activity.name))))
+                templates.append(self.__build_template(dataStore, metaStore, activityName, "activity", (arguments.packageName, activityName)))
 
         for service in packageManager.get_services(arguments.packageName):
-            templates.append(self.__build_template(dataStore, metaStore, str(service.name), 
-                                                   "service", (arguments.packageName, str(service.name))))
+            serviceName = str(service.name).encode("utf-8")
+            templates.append(self.__build_template(dataStore, metaStore, serviceName, "service", (arguments.packageName, serviceName)))
 
         # send all intents
         IntentBuilder = self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
-        logcat.flush_logcat(self)
+        logcat.flush_logcat(self, androidSDK)
         for i in xrange(int(arguments.numIter)):
             for template in templates:
                 template.send(self, IntentBuilder)
                 sleep(1)
-        logcat.dump_logcat(self, outputPath + arguments.packageName + ".log")
+        logcat.dump_logcat(self, androidSDK, outputPath + arguments.packageName + ".log")
     
     def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
@@ -87,7 +88,7 @@ class IntentTemplate:
             intentBuilder = context.new(IntentBuilder)
             intent = intentBuilder.build(self.component[0], self.component[1], self.staticData, self.metaData)
             
-            context.stdout.write("[color blue]%s[/color]\n" % intent.toString())
+            context.stdout.write("[color blue]%s[/color]\n" % str(intent.toString()).encode('utf-8'))
             extraStr = intentBuilder.getExtrasString(intent)
             if str(extraStr) != "null":
                 context.stdout.write("[color green]%s[/color]\n" % extraStr)

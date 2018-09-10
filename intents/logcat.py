@@ -1,19 +1,18 @@
 from subprocess import check_output, check_call, CalledProcessError
-from os import path
 
 def write_log_entry(context, msg):
     Log = context.klass("android.util.Log")
     Log.i("IntentFuzzer", msg)
     
-def flush_logcat(context):
+def flush_logcat(context, androidSDK):
     try:
-        check_call([path.expanduser("~/Android/Sdk/platform-tools/adb"), "logcat", "-c"])
+        check_call([androidSDK + "platform-tools/adb", "logcat", "-c"])
     except CalledProcessError as e:
         context.stderr.write("Failed calling logcat: %s\n" % e.output)
 
-def dump_logcat(context, filePath):
+def dump_logcat(context, androidSDK, filePath):
     try:
-        output = check_output([path.expanduser("~/Android/Sdk/platform-tools/adb"), "logcat", "-d"])
+        output = check_output([androidSDK + "platform-tools/adb", "logcat", "-d"])
         with open(path.expanduser(filePath), 'w') as file:
             file.write(output)
     except CalledProcessError as e1:
