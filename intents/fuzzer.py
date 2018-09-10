@@ -61,7 +61,10 @@ class Fuzzer(Module, loader.ClassLoader):
             for template in templates:
                 template.send(self, IntentBuilder)
                 sleep(1)
-        logcat.dump_logcat(self, androidSDK, outputPath + arguments.packageName + ".log")
+                
+        mainFilePath = outputPath + arguments.packageName + ".application" + ".log"
+        crashFilePath = outputPath + arguments.packageName + ".crash" + ".log"
+        logcat.dump_logcat(self, androidSDK, mainFilePath, crashFilePath)
     
     def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))

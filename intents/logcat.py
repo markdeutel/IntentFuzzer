@@ -6,14 +6,17 @@ def write_log_entry(context, msg):
     
 def flush_logcat(context, androidSDK):
     try:
-        check_call([androidSDK + "platform-tools/adb", "logcat", "-c"])
+        check_call([androidSDK + "platform-tools/adb", "logcat", "-b", "main", "-b", "crash", "-c"])
     except CalledProcessError as e:
         context.stderr.write("Failed calling logcat: %s\n" % e.output)
 
-def dump_logcat(context, androidSDK, filePath):
+def dump_logcat(context, androidSDK, mainFilePath, crashFilePath):
     try:
-        output = check_output([androidSDK + "platform-tools/adb", "logcat", "-d"])
-        with open(filePath, 'w') as file:
+        output = check_output([androidSDK + "platform-tools/adb", "logcat", "-b", "main", "-d"])
+        with open(mainFilePath, 'w') as file:
+            file.write(output)
+        output = check_output([androidSDK + "platform-tools/adb", "logcat", "-b", "crash", "-d"])
+        with open(crashFilePath, 'w') as file:
             file.write(output)
     except CalledProcessError as e1:
         context.stderr.write("Failed calling logcat: %s\n" % e1.output)
