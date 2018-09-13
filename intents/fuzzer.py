@@ -29,6 +29,7 @@ class Fuzzer(Module, loader.ClassLoader):
         dataStorePath = path.expanduser(config.get("dataStore", path.abspath(path.dirname(__file__))))
         outputPath = path.expanduser(config.get("outputFolder", path.abspath(path.dirname(__file__))))
         androidSDK = path.expanduser(config.get("androidSDK", "~/Android/SDK"))
+        intentTimeout = config.get("intentTimeout", 2)
         
         # get static data from file
         templates = []
@@ -61,7 +62,7 @@ class Fuzzer(Module, loader.ClassLoader):
         for i in xrange(int(arguments.numIter)):
             for template in templates:
                 template.send(self, IntentBuilder)
-                sleep(1)
+                sleep(intentTimeout)
                 
         appFilePath = outputPath + arguments.packageName + ".app.log"
         crashFilePath = outputPath + arguments.packageName + ".crash.log"
