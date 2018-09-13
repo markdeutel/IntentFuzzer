@@ -43,6 +43,8 @@ def __parse_file(inputFilePath):
                                     exceptionsCount += 1
                                     __append_stacktarce(exceptions, stacktrace, lastIntent)
                                 stacktrace = []
+                                if meta == "E/UncaughtException":
+                                    stacktrace.append("Application crash:")
                             stacktrace.append(lastMessage)
                         stacktrace.append(message)
                     lastMessage = message
@@ -57,7 +59,7 @@ def __append_stacktarce(exceptions, stacktrace, lastIntent):
         exceptions[lastIntent].append(stacktrace)
     else:
         exceptions[lastIntent].append(stacktrace)
-          
+
 '''
 def main():
   parse("/home/mark/deepthought/bachelor/AndroidApks/output/com.accuweather.android.app.log", 
