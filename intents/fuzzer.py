@@ -101,11 +101,11 @@ class IntentTemplate:
             intentBuilder = context.new(IntentBuilder)
             intent = intentBuilder.build(self.component[0], self.component[1], self.staticData, self.metaData)
             
-            context.stdout.write("[color blue]%s[/color]\n" % str(intent.toString()).encode('utf-8'))
+            context.stdout.write("[color blue]%s[/color]\n" % str(intent.toString()).encode("utf-8"))
             extraStr = intentBuilder.getExtrasString(intent)
             if str(extraStr) != "null":
                 context.stdout.write("[color green]%s[/color]\n" % extraStr)
-            logcat.write_log_entry(context, intent.toUri(0))
+            logcat.write_log_entry(context, str(intent.toUri(0)).encode("utf-8"))
             
             if self.type == "receiver":
                 context.getContext().sendBroadcast(intent)
