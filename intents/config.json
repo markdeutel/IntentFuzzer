@@ -2,5 +2,5 @@
     "dataStore": "~/deepthought/bachelor/AndroidApks/datastore/",
     "outputFolder": "~/deepthought/bachelor/AndroidApks/output/",
     "androidSDK": "~/Android/Sdk/",
-    "intentTimeout": 10
+    "intentTimeout": 3
 }

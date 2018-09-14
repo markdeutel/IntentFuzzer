@@ -38,13 +38,17 @@ class Fuzzer(Module, loader.ClassLoader):
         packageManager = FuzzerPackageManager(self)
         
         # build the intent templates
-        for receiver in packageManager.get_receivers(arguments.packageName):
+        receivers = packageManager.get_receivers(arguments.packageName)
+        self.stdout.write("Found %s exported receivers\n" % len(receivers))
+        for receiver in receivers:
             receiverName = str(receiver.name).encode("utf-8")
             templates.append(self.__build_template(dataStore, metaStore, receiverName, "receiver", (arguments.packageName, receiverName)))
 
         # activities might have an alias name declared for them. If this is true, the all found static data for this component 
         # is located under the real name not the alias
-        for activity in packageManager.get_activities(arguments.packageName):
+        activities = packageManager.get_activities(arguments.packageName)
+        self.stdout.write("Found %s exported activities\n" % len(activities))
+        for activity in activities:
             targetActivityName = str(activity.targetActivity).encode("utf-8")
             activityName = str(activity.name).encode("utf-8")
             if targetActivityName != "null":
@@ -52,7 +56,9 @@ class Fuzzer(Module, loader.ClassLoader):
             else:
                 templates.append(self.__build_template(dataStore, metaStore, activityName, "activity", (arguments.packageName, activityName)))
 
-        for service in packageManager.get_services(arguments.packageName):
+        services = packageManager.get_services(arguments.packageName)
+        self.stdout.write("Found %s exported services\n" % len(services))
+        for service in services:
             serviceName = str(service.name).encode("utf-8")
             templates.append(self.__build_template(dataStore, metaStore, serviceName, "service", (arguments.packageName, serviceName)))
 
@@ -60,6 +66,7 @@ class Fuzzer(Module, loader.ClassLoader):
         IntentBuilder = self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
         logcat.flush_logcat(self, androidSDK)
         for i in xrange(int(arguments.numIter)):
+            self.stdout.write("Iteration: %d ------------------------------------------------\n" % i)
             for template in templates:
                 template.send(self, IntentBuilder)
                 sleep(intentTimeout)
@@ -67,7 +74,7 @@ class Fuzzer(Module, loader.ClassLoader):
         appFilePath = outputPath + arguments.packageName + ".app.log"
         crashFilePath = outputPath + arguments.packageName + ".crash.log"
         logcat.dump_logcat(self, androidSDK, appFilePath, crashFilePath)
-        logparser.parse(appFilePath, crashFilePath, outputPath + arguments.packageName + ".app.json")
+        #logparser.parse(appFilePath, crashFilePath, outputPath + arguments.packageName + ".app.json")
     
     def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
@@ -98,7 +105,7 @@ class IntentTemplate:
             extraStr = intentBuilder.getExtrasString(intent)
             if str(extraStr) != "null":
                 context.stdout.write("[color green]%s[/color]\n" % extraStr)
-            logcat.write_log_entry(context, intent.toString())
+            logcat.write_log_entry(context, intent.toUri(0))
             
             if self.type == "receiver":
                 context.getContext().sendBroadcast(intent)
@@ -109,7 +116,7 @@ class IntentTemplate:
         except:
             context.stderr.write("Failed executing intent: %s\n" % sys.exc_info()[1])
     
-class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
+class FuzzerPackageManager(common.PackageManager.PackageManagerProxy, common.Filters):
 
     def get_receivers(self, packageNameString):
         receivers = self.packageManager().getPackageInfo(packageNameString,
@@ -117,6 +124,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
         if str(receivers) == "null":
             return None
         else:
+            receivers = self.match_filter(receivers, "exported", True)
             return receivers
         
     def get_activities(self, packageNameString):
@@ -125,6 +133,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
         if str(activities) == "null":
             return None
         else:
+            activities = self.match_filter(activities, "exported", True)
             return activities
         
     def get_services(self, packageNameString):
@@ -133,4 +142,5 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy):
         if str(services) == "null":
             return None
         else:
+            services = self.match_filter(services, "exported", True)
             return services

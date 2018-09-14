@@ -166,7 +166,7 @@ public class IntentBuilder
                 
     private void putTwistedIntentExtra(Intent intent, String key)
     {
-        int pick = random.nextInt(4);
+        int pick = random.nextInt(5);
         switch(pick)
         {
             case 0: // string
@@ -181,12 +181,14 @@ public class IntentBuilder
             case 3: // boolean
                 intent.putExtra(key, random.nextBoolean());
                 break;
+            case 4: // null
+                intent.putExtra(key, (String)null);
         }
     }
         
     private void putTwistedBundleExtra(Bundle bundle, String key)
     {
-        int pick = random.nextInt(4);
+        int pick = random.nextInt(5);
         switch(pick)
         {
             case 0: // string
@@ -201,6 +203,8 @@ public class IntentBuilder
             case 3: // boolean
                 bundle.putBoolean(key, random.nextBoolean());
                 break;
+            case 4: // null
+                bundle.putString(key, null);
         }
     }
                
