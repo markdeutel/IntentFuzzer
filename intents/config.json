@@ -2,5 +2,24 @@
     "dataStore": "~/deepthought/bachelor/AndroidApks/datastore/",
     "outputFolder": "~/deepthought/bachelor/AndroidApks/output/",
     "androidSDK": "~/Android/Sdk/",
-    "intentTimeout": 3
+    "intentTimeout": 3,
+    "numberIterations": 10,
+    "packageNames": [
+        "com.camera.beautycam",
+        "com.king.candycrushsaga",
+        "com.king.candycrushsodasaga",
+        "com.microsoft.office.outlook",
+        "com.microsoft.office.word",
+        "com.runtastic.android",
+        "com.nianticlabs.pokemongo",
+        "com.shazam.android",
+        "com.tinder",
+        "com.trivago",
+        "com.twitter.android",
+        "com.ubercab",
+        "com.zdf.android.mediathek",
+        "de.zalando.mobile",
+        "kik.android",
+        "net.lovoo"
+    ]
 }

@@ -21,60 +21,68 @@ class Fuzzer(Module, loader.ClassLoader):
 
     def add_arguments(self, parser):
         parser.add_argument("-p", "--packageName", help="specify the package which should be attacked.")
-        parser.add_argument("-n", "--numIter", help="specify the number of itertaion a campaign against a package should take")
 
     def execute(self, arguments):
         # read cofig
-        config = self.__load_json(path.abspath(path.dirname(__file__)) + "/config.json")
-        dataStorePath = path.expanduser(config.get("dataStore", path.abspath(path.dirname(__file__))))
-        outputPath = path.expanduser(config.get("outputFolder", path.abspath(path.dirname(__file__))))
-        androidSDK = path.expanduser(config.get("androidSDK", "~/Android/SDK"))
-        intentTimeout = config.get("intentTimeout", 2)
+        config = Config(self.__load_json(path.abspath(path.dirname(__file__)) + "/config.json"))
+        for packageName in config.packageNames:
+            self.__test_package(config, packageName)
+        
+    def __test_package(self, config, packageName):
+        # print header
+        self.stdout.write("\n")
+        self.stdout.write("[color red]%s[/color]\n" % packageName)
+        self.stdout.write("[color red]--------------------------------------------------------------------------------[/color]\n")
         
         # get static data from file
         templates = []
-        dataStore = self.__load_json(dataStorePath + arguments.packageName + ".json")
-        metaStore = self.__load_json(dataStorePath + arguments.packageName + ".meta")
-        packageManager = FuzzerPackageManager(self)
+        dataStore = self.__load_json(config.dataStorePath + packageName + ".json")
+        metaStore = self.__load_json(config.dataStorePath + packageName + ".meta")
         
         # build the intent templates
-        receivers = packageManager.get_receivers(arguments.packageName)
+        packageManager = FuzzerPackageManager(self)
+        receivers = packageManager.get_receivers(packageName)
         self.stdout.write("Found %s exported receivers\n" % len(receivers))
         for receiver in receivers:
             receiverName = str(receiver.name).encode("utf-8")
-            templates.append(self.__build_template(dataStore, metaStore, receiverName, "receiver", (arguments.packageName, receiverName)))
+            templates.append(self.__build_template(dataStore, metaStore, receiverName, "receiver", (packageName, receiverName)))
 
         # activities might have an alias name declared for them. If this is true, the all found static data for this component 
         # is located under the real name not the alias
-        activities = packageManager.get_activities(arguments.packageName)
+        activities = packageManager.get_activities(packageName)
         self.stdout.write("Found %s exported activities\n" % len(activities))
         for activity in activities:
             targetActivityName = str(activity.targetActivity).encode("utf-8")
             activityName = str(activity.name).encode("utf-8")
             if targetActivityName != "null":
-                templates.append(self.__build_template(dataStore, metaStore, targetActivityName, "activity", (arguments.packageName, activityName)))
+                templates.append(self.__build_template(dataStore, metaStore, targetActivityName, "activity", (packageName, activityName)))
             else:
-                templates.append(self.__build_template(dataStore, metaStore, activityName, "activity", (arguments.packageName, activityName)))
+                templates.append(self.__build_template(dataStore, metaStore, activityName, "activity", (packageName, activityName)))
 
-        services = packageManager.get_services(arguments.packageName)
+        services = packageManager.get_services(packageName)
         self.stdout.write("Found %s exported services\n" % len(services))
         for service in services:
             serviceName = str(service.name).encode("utf-8")
-            templates.append(self.__build_template(dataStore, metaStore, serviceName, "service", (arguments.packageName, serviceName)))
+            templates.append(self.__build_template(dataStore, metaStore, serviceName, "service", (packageName, serviceName)))
 
         # send all intents
         IntentBuilder = self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
-        logcat.flush_logcat(self, androidSDK)
-        for i in xrange(int(arguments.numIter)):
-            self.stdout.write("Iteration: %d ------------------------------------------------\n" % i)
+        logcat.flush_logcat(self, config.androidSDK)
+        sleep(5)
+        logcat.write_log_entry(self, "Packagename: " + packageName)
+        logcat.write_log_entry(self, "Number of iterations: " + str(config.numIter)) 
+        logcat.write_log_entry(self, "Exported receivers: " + str(len(receivers)))
+        logcat.write_log_entry(self, "Exported activities: " + str(len(activities)))
+        logcat.write_log_entry(self, "Exported services: " + str(len(services)))
+        for i in xrange(config.numIter):
+            self.stdout.write("Iteration: %d --------------------------------------------------------------------------------\n" % (i + 1))
             for template in templates:
                 template.send(self, IntentBuilder)
-                sleep(intentTimeout)
+                sleep(config.intentTimeout)
                 
-        appFilePath = outputPath + arguments.packageName + ".app.log"
-        crashFilePath = outputPath + arguments.packageName + ".crash.log"
-        logcat.dump_logcat(self, androidSDK, appFilePath, crashFilePath)
-        #logparser.parse(appFilePath, crashFilePath, outputPath + arguments.packageName + ".app.json")
+        appFilePath = config.outputPath + packageName + ".app.log"
+        crashFilePath = config.outputPath + packageName + ".crash.log"
+        logcat.dump_logcat(self, config.androidSDK, appFilePath, crashFilePath)
     
     def __build_template(self, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, "{}"))
@@ -115,6 +123,17 @@ class IntentTemplate:
                 context.getContext().startService(intent)
         except:
             context.stderr.write("Failed executing intent: %s\n" % sys.exc_info()[1])
+            
+class Config:
+    
+    def __init__(self, jsonConfig):
+        self.dataStorePath = path.expanduser(jsonConfig.get("dataStore", path.abspath(path.dirname(__file__))))
+        self.outputPath = path.expanduser(jsonConfig.get("outputFolder", path.abspath(path.dirname(__file__))))
+        self.androidSDK = path.expanduser(jsonConfig.get("androidSDK", "~/Android/SDK"))
+        self.intentTimeout = jsonConfig.get("intentTimeout", 2)
+        self.numIter = jsonConfig.get("numberIterations", 1)
+        self.packageNames = jsonConfig.get("packageNames", [])
+        
     
 class FuzzerPackageManager(common.PackageManager.PackageManagerProxy, common.Filters):
 
@@ -122,7 +141,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy, common.Fil
         receivers = self.packageManager().getPackageInfo(packageNameString,
                                                          self.packageManager().GET_RECEIVERS).receivers
         if str(receivers) == "null":
-            return None
+            return []
         else:
             receivers = self.match_filter(receivers, "exported", True)
             return receivers
@@ -131,7 +150,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy, common.Fil
         activities = self.packageManager().getPackageInfo(packageNameString,
                                                          self.packageManager().GET_ACTIVITIES).activities
         if str(activities) == "null":
-            return None
+            return []
         else:
             activities = self.match_filter(activities, "exported", True)
             return activities
@@ -140,7 +159,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy, common.Fil
         services = self.packageManager().getPackageInfo(packageNameString,
                                                          self.packageManager().GET_SERVICES).services
         if str(services) == "null":
-            return None
+            return []
         else:
             services = self.match_filter(services, "exported", True)
             return services
