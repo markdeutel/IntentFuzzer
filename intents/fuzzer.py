@@ -69,7 +69,6 @@ class Fuzzer(Module, loader.ClassLoader):
             self.__build_template(templates, dataStore, metaStore, serviceName, "service", (packageName, serviceName))
 
         # send all intents
-        IntentBuilder = self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
         logcat.flush_logcat(self, config.androidSDK)
         sleep(5)
         logcat.write_log_entry(self, "Packagename: " + packageName)
@@ -78,9 +77,9 @@ class Fuzzer(Module, loader.ClassLoader):
         logcat.write_log_entry(self, "Exported activities: " + str(len(activities)))
         logcat.write_log_entry(self, "Exported services: " + str(len(services)))
         for i in xrange(config.numIter):
-            self.stdout.write("Iteration: %d --------------------------------------------------------------------------------\n" % (i + 1))
+            self.stdout.write("[color blue]Iteration: %d --------------------------------------------------------------------------------[/color]\n" % (i + 1))
             for template in templates:
-                template.send(self, IntentBuilder)
+                template.send(self)
                 sleep(config.intentTimeout)
                 
         appFilePath = config.outputPath + packageName + ".app.log"
@@ -93,10 +92,10 @@ class Fuzzer(Module, loader.ClassLoader):
         categories = metaData.get("categories", [])
         actions = metaData.get("actions", [])
         for action in actions:
-            templates.append(IntentTemplate(staticData, type, component, action, categories))
+            templates.append(IntentTemplate(self, staticData, type, component, action, categories))
         # Even if there is no expected action defined in the intent filter: 
         # There is always the possibility to directly send an intent to a component.
-        templates.append(IntentTemplate(staticData, type, component, "null", categories))
+        templates.append(IntentTemplate(self, staticData, type, component, "null", categories))
     
     def __load_json(self, filePath):
         try:
@@ -108,24 +107,20 @@ class Fuzzer(Module, loader.ClassLoader):
     
 class IntentTemplate:
     
-    def __init__(self, staticData, type, component, action, categories):
+    def __init__(self, context, staticData, type, component, action, categories):
+        IntentBuilder = context.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
+        self.intentBuilder = context.new(IntentBuilder)
         self.staticData = staticData
-        
         self.template = {}
         self.template["type"] = type
         self.template["component"] = component
         self.template["action"] = action
         self.template["categories"] = categories
         
-    def send(self, context, IntentBuilder):
+    def send(self, context):
         try:
-            intentBuilder = context.new(IntentBuilder)
-            intent = intentBuilder.build(json.dumps(self.template), self.staticData)
-            
-            context.stdout.write("[color blue]%s[/color]\n" % str(intent.toString()).encode("utf-8"))
-            extraStr = intentBuilder.getExtrasString(intent)
-            if str(extraStr) != "null":
-                context.stdout.write("[color green]%s[/color]\n" % extraStr)
+            intent = self.intentBuilder.build(json.dumps(self.template), self.staticData)
+            context.stdout.write("%s\n" % str(intent.toUri(0)).encode("utf-8"))
             logcat.write_log_entry(context, str(intent.toUri(0)).encode("utf-8"))
             
             if self.template["type"] == "receiver":
@@ -135,7 +130,7 @@ class IntentTemplate:
             elif self.template["type"] == "service":
                 context.getContext().startService(intent)
         except:
-            context.stderr.write("Failed executing intent: %s\n" % sys.exc_info()[1])
+            context.stderr.write("[color red]Failed executing intent: %s[/color]\n" % sys.exc_info()[1])
             
 class Config:
     
@@ -157,7 +152,7 @@ class FuzzerPackageManager(common.PackageManager.PackageManagerProxy, common.Fil
             return []
         else:
             receivers = self.match_filter(receivers, "exported", True)
-            return receivers
+            return receivers                   
         
     def get_activities(self, packageNameString):
         activities = self.packageManager().getPackageInfo(packageNameString,

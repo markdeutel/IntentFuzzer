@@ -98,11 +98,34 @@ public class IntentBuilder
                         if (isBundleMethod)
                             bundleNames.add(key);
                         else
-                            putTwistedIntentExtra(intent, key);
+                            putIntentExtra(intent, methodName, key);
                     }
                 }
             }
         }
+    }
+                    
+    private void putIntentExtra(Intent intent, String methodName, String key)
+    {
+        methodName = methodName.toLowerCase();
+        if (methodName.contains("string"))
+            intent.putExtra(key, nextRandomString());
+        else if (methodName.contains("int"))
+            intent.putExtra(key, random.nextInt());
+        else if (methodName.contains("short"))
+            intent.putExtra(key, (short) random.nextInt(Short.MAX_VALUE + 1));
+        else if (methodName.contains("long"))
+            intent.putExtra(key, random.nextLong());
+        else if (methodName.contains("float"))
+            intent.putExtra(key, random.nextFloat());
+        else if (methodName.contains("double"))
+            intent.putExtra(key, random.nextDouble());
+        else if (methodName.contains("boolean"))
+            intent.putExtra(key, random.nextBoolean());
+        else if (methodName.contains("null"))
+            intent.putExtra(key, (String)null);
+        else
+            intent.putExtra(key, nextRandomString());
     }
             
     private void putBundleExtras(Intent intent, JSONObject bundleInvocations, String bundleName) throws JSONException
@@ -113,12 +136,13 @@ public class IntentBuilder
         {
             for (int i=0; i<methods.length(); ++i)
             {
+                final String methodName = methods.getString(i);
                 final JSONArray keys = bundleInvocations.getJSONArray(methods.getString(i));
                 for (int j=0; j<keys.length(); ++j)
                 {
                     final String key = keys.getString(j);
                     if (!key.isEmpty())
-                        putTwistedBundleExtra(bundle, key);
+                        putBundleExtra(bundle, methodName, key);
                 }
             }
         }
@@ -128,49 +152,28 @@ public class IntentBuilder
         else
             intent.putExtra(bundleName, bundle);
     }
-                
-    private void putTwistedIntentExtra(Intent intent, String key)
-    {
-        int pick = random.nextInt(5);
-        switch(pick)
-        {
-            case 0: // string
-                intent.putExtra(key, nextRandomString());
-                break;
-            case 1: // integer
-                intent.putExtra(key, random.nextInt());
-                break;
-            case 2: // float
-                intent.putExtra(key, random.nextFloat());
-                break;
-            case 3: // boolean
-                intent.putExtra(key, random.nextBoolean());
-                break;
-            case 4: // null
-                intent.putExtra(key, (String)null);
-        }
-    }
         
-    private void putTwistedBundleExtra(Bundle bundle, String key)
+    private void putBundleExtra(Bundle bundle, String methodName, String key)
     {
-        int pick = random.nextInt(5);
-        switch(pick)
-        {
-            case 0: // string
-                bundle.putString(key, nextRandomString());
-                break;
-            case 1: // integer
-                bundle.putInt(key, random.nextInt());
-                break;
-            case 2: // float
-                bundle.putFloat(key, random.nextFloat());
-                break;
-            case 3: // boolean
-                bundle.putBoolean(key, random.nextBoolean());
-                break;
-            case 4: // null
-                bundle.putString(key, null);
-        }
+        methodName = methodName.toLowerCase();
+        if (methodName.contains("string"))
+            bundle.putString(key, nextRandomString());
+        else if (methodName.contains("int"))
+            bundle.putInt(key, random.nextInt());
+        else if (methodName.contains("short"))
+            bundle.putShort(key, (short) random.nextInt(Short.MAX_VALUE + 1));
+        else if (methodName.contains("long"))
+            bundle.putLong(key, random.nextLong());
+        else if (methodName.contains("float"))
+            bundle.putFloat(key, random.nextFloat());
+        else if (methodName.contains("double"))
+            bundle.putDouble(key, random.nextDouble());
+        else if (methodName.contains("boolean"))
+            bundle.putBoolean(key, random.nextBoolean());
+        else if (methodName.contains("null"))
+            bundle.putString(key, (String)null);
+        else
+            bundle.putString(key, nextRandomString());
     }
                
     private static final String DATA = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
