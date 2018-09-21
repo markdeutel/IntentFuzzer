@@ -21,59 +21,24 @@ public class IntentBuilder
 {
     private Random random = new Random();
     
-    public Intent build(final String pkg, final String cls, final String dataStr, final String metaStr)
+    public Intent build(final String jsonTemplate, final String staticDataStr)
     {
         try
         {
             // build intent
             final Intent intent = new Intent();
-            intent.setComponent(new ComponentName(pkg, cls));
+            final JSONObject template = new JSONObject(jsonTemplate.substring(jsonTemplate.indexOf('{'), jsonTemplate.lastIndexOf('}') + 1));
+            final JSONArray component = template.getJSONArray("component");
+            final JSONArray categories = template.getJSONArray("categories");
+            final String action = template.getString("action").equals("null") ? null : template.getString("action");
+            intent.setComponent(new ComponentName(component.getString(0), component.getString(1)));
+            intent.setAction(action);
+            for (int i=0; i<categories.length(); ++i)
+                intent.addCategory(categories.getString(i));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-            
-            // set provided meta data
-            final JSONObject metaData = new JSONObject(metaStr.substring(metaStr.indexOf('{'), metaStr.lastIndexOf('}') + 1));
-            if (metaData.length() > 0)
-            {
-                // If getAction() or getCategories() or getData is called and no action or category is set in the intent, null is returned.
-                // So we definitly want to try setting no action or category at all.
-                if (random.nextBoolean())
-                {
-                    // set actions
-                    final JSONArray actions = metaData.getJSONArray("actions");
-                    final List<String> actionsList = new ArrayList<>();
-                    for (int i=0; i<actions.length(); ++i)
-                        actionsList.add(actions.getString(i));
-                    if (actionsList.size() > 0)
-                        intent.setAction(actionsList.get(random.nextInt(actionsList.size())));
-                }
-                
-                if (random.nextBoolean())
-                {
-                    // set categories
-                    final JSONArray categories = metaData.getJSONArray("categories");
-                    final List<String> categoryList = new ArrayList<>();
-                    for (int i=0; i<categories.length(); ++i)
-                        intent.addCategory(categories.getString(i));
-                }
-                
-                if (random.nextBoolean())
-                {
-                    // set data
-                    final JSONArray data = metaData.getJSONArray("data");
-                    final List<String> dataList = new ArrayList<>();
-                    for (int i=0; i<data.length(); ++i)
-                        dataList.add(data.getString(i));
-                    if (dataList.size() > 0)
-                    {
-                        String dataUri = dataList.get(random.nextInt(dataList.size()));
-                        dataUri = dataUri.replaceAll("%s", nextRandomString());
-                        intent.setData(Uri.parse(dataUri));
-                    }
-                }
-            }
 
             // set provided extras
-            final JSONObject staticData = new JSONObject(dataStr.substring(dataStr.indexOf('{'), dataStr.lastIndexOf('}') + 1));
+            final JSONObject staticData = new JSONObject(staticDataStr.substring(staticDataStr.indexOf('{'), staticDataStr.lastIndexOf('}') + 1));
             if (staticData.length() > 0)
             {
                 final JSONObject intentInvocations = staticData.getJSONObject("intentInvocations");

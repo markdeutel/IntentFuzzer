@@ -38,6 +38,9 @@ class Fuzzer(Module, loader.ClassLoader):
         templates = []
         dataStore = self.__load_json(config.dataStorePath + packageName + ".json")
         metaStore = self.__load_json(config.dataStorePath + packageName + ".meta")
+        if dataStore == None or metaStore == None:
+            self.stderr.write("Could not find data from static analysis\n")
+            return;
         
         # build the intent templates
         packageManager = FuzzerPackageManager(self)
@@ -45,7 +48,7 @@ class Fuzzer(Module, loader.ClassLoader):
         self.stdout.write("Found %s exported receivers\n" % len(receivers))
         for receiver in receivers:
             receiverName = str(receiver.name).encode("utf-8")
-            templates.append(self.__build_template(dataStore, metaStore, receiverName, "receiver", (packageName, receiverName)))
+            self.__build_template(templates, dataStore, metaStore, receiverName, "receiver", (packageName, receiverName))
 
         # activities might have an alias name declared for them. If this is true, the all found static data for this component 
         # is located under the real name not the alias
@@ -55,15 +58,15 @@ class Fuzzer(Module, loader.ClassLoader):
             targetActivityName = str(activity.targetActivity).encode("utf-8")
             activityName = str(activity.name).encode("utf-8")
             if targetActivityName != "null":
-                templates.append(self.__build_template(dataStore, metaStore, targetActivityName, "activity", (packageName, activityName)))
+                self.__build_template(templates, dataStore, metaStore, targetActivityName, "activity", (packageName, activityName))
             else:
-                templates.append(self.__build_template(dataStore, metaStore, activityName, "activity", (packageName, activityName)))
+                self.__build_template(templates, dataStore, metaStore, activityName, "activity", (packageName, activityName))
 
         services = packageManager.get_services(packageName)
         self.stdout.write("Found %s exported services\n" % len(services))
         for service in services:
             serviceName = str(service.name).encode("utf-8")
-            templates.append(self.__build_template(dataStore, metaStore, serviceName, "service", (packageName, serviceName)))
+            self.__build_template(templates, dataStore, metaStore, serviceName, "service", (packageName, serviceName))
 
         # send all intents
         IntentBuilder = self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
@@ -84,30 +87,40 @@ class Fuzzer(Module, loader.ClassLoader):
         crashFilePath = config.outputPath + packageName + ".crash.log"
         logcat.dump_logcat(self, config.androidSDK, appFilePath, crashFilePath)
     
-    def __build_template(self, dataStore, metaStore, locator, type, component):
-        staticData = json.dumps(dataStore.get(locator, "{}"))
-        metaData = json.dumps(metaStore.get(locator, "{}"))
-        return IntentTemplate(staticData, metaData, type, component)
+    def __build_template(self, templates, dataStore, metaStore, locator, type, component):
+        staticData = json.dumps(dataStore.get(locator, {}))
+        metaData = metaStore.get(locator, {})
+        categories = metaData.get("categories", [])
+        actions = metaData.get("actions", [])
+        for action in actions:
+            templates.append(IntentTemplate(staticData, type, component, action, categories))
+        # Even if there is no expected action defined in the intent filter: 
+        # There is always the possibility to directly send an intent to a component.
+        templates.append(IntentTemplate(staticData, type, component, "null", categories))
     
     def __load_json(self, filePath):
         try:
             with open(filePath, 'r') as file:
                 return json.load(file)
         except:
-            self.stderr.write("Failed reading static analysis data: %s\n" % sys.exc_info()[1])
+            self.stderr.write("Failed reading json file: %s\n" % sys.exc_info()[1])
+            return None
     
 class IntentTemplate:
     
-    def __init__(self, staticData, metaData, type, component):
+    def __init__(self, staticData, type, component, action, categories):
         self.staticData = staticData
-        self.metaData = metaData
-        self.component = component
-        self.type = type
+        
+        self.template = {}
+        self.template["type"] = type
+        self.template["component"] = component
+        self.template["action"] = action
+        self.template["categories"] = categories
         
     def send(self, context, IntentBuilder):
         try:
             intentBuilder = context.new(IntentBuilder)
-            intent = intentBuilder.build(self.component[0], self.component[1], self.staticData, self.metaData)
+            intent = intentBuilder.build(json.dumps(self.template), self.staticData)
             
             context.stdout.write("[color blue]%s[/color]\n" % str(intent.toString()).encode("utf-8"))
             extraStr = intentBuilder.getExtrasString(intent)
@@ -115,11 +128,11 @@ class IntentTemplate:
                 context.stdout.write("[color green]%s[/color]\n" % extraStr)
             logcat.write_log_entry(context, str(intent.toUri(0)).encode("utf-8"))
             
-            if self.type == "receiver":
+            if self.template["type"] == "receiver":
                 context.getContext().sendBroadcast(intent)
-            elif self.type == "activity":
+            elif self.template["type"] == "activity":
                 context.getContext().startActivity(intent)
-            elif self.type == "service":
+            elif self.template["type"] == "service":
                 context.getContext().startService(intent)
         except:
             context.stderr.write("Failed executing intent: %s\n" % sys.exc_info()[1])
