@@ -5,24 +5,6 @@
     "intentTimeout": 3,
     "numberIterations": 10,
     "packageNames": [
-        "com.babbel.mobile.android",
-        "com.booking",
-        "com.contextlogic.wish",
-        "com.discord",
-        "com.ebay.kleinanzeigen",
-        "com.ebay.mobile",
-        "com.google.android.apps.translate",
-        "com.google.android.apps.youtube.music",
-        "com.medion.alditalkactivation",
-        "com.paypal.android.p2pmobile",
-        "com.pinterest",
-        "com.ryanair.cheapflights",
-        "com.skype.raider",
-        "com.soundcloud.android",
-        "de.mcdonalds.mcdonaldsinfoapp",
-        "deezer.android.app",
-        "org.mozilla.firefox",
-        "com.android.chrome",
-        "org.telegram.messenger"
+        "com.contextlogic.wish"
     ]
 }
