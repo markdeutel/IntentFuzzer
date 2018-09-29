@@ -1,26 +1,15 @@
-from subprocess import check_output, check_call, CalledProcessError
+from subprocess import check_output, check_call, CalledProcessError, Popen
 
 def write_log_entry(context, msg):
     Log = context.klass("android.util.Log")
     Log.i("IntentFuzzer", msg)
     
-def flush_logcat(context, androidSDK):
+def logcat_listen(context, filePath, androidSDK):
     try:
-        check_call([androidSDK + "platform-tools/adb", "logcat", "-b", "main", "-b", "crash", "-c"])
+        check_call([androidSDK + "platform-tools/adb", "logcat", "-c"])
+        with open(filePath, "w") as f:
+            f.flush()
+            return Popen([androidSDK + "platform-tools/adb", "logcat"], stdout=f)
     except CalledProcessError as e:
         context.stderr.write("Failed calling logcat: %s\n" % e.output)
-
-def dump_logcat(context, androidSDK, appPath, crashPath):
-    try:
-        output = check_output([androidSDK + "platform-tools/adb", "logcat", "-b", "main", "-v", "tag", "-d"])
-        with open(appPath, 'w') as file:
-            file.write(output)
-        output = check_output([androidSDK + "platform-tools/adb", "logcat", "-b", "crash", "-v", "tag", "-d"])
-        with open(crashPath, 'w') as file:
-            file.write(output)
-    except CalledProcessError as e1:
-        context.stderr.write("Failed calling logcat: %s\n" % e1.output)
-    except IOError as e2:
-        context.stderr.write("Failed saving logcat output: I/O error (%s): %s\n" % (e2.errno, e2.strerror))
-    return None
     

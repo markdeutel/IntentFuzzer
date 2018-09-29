@@ -1,5 +1,6 @@
 from drozer.modules import common, Module
 from drozer.modules.common import loader
+from pydiesel.reflection import ReflectionException
 
 from os import path
 from time import sleep
@@ -24,7 +25,9 @@ class Fuzzer(Module, loader.ClassLoader):
 
     def execute(self, arguments):
         # read cofig
-        config = Config(self.__load_json(path.abspath(path.dirname(__file__)) + "/config.json"))
+        configPath = path.abspath(path.dirname(__file__)) + "/config.json"
+        self.stdout.write("Loading config file: %s\n" % configPath)
+        config = Config(self.__load_json(configPath))
         for packageName in config.packageNames:
             self.__test_package(config, packageName)
         
@@ -69,8 +72,9 @@ class Fuzzer(Module, loader.ClassLoader):
             self.__build_template(templates, dataStore, metaStore, serviceName, "service", (packageName, serviceName))
 
         # send all intents
-        logcat.flush_logcat(self, config.androidSDK)
-        sleep(5)
+        appFilePath = config.outputPath + packageName + ".app.log"
+        crashFilePath = config.outputPath + packageName + ".crash.log"
+        logcat_proc = logcat.logcat_listen(self, appFilePath, config.androidSDK)
         logcat.write_log_entry(self, "Packagename: " + packageName)
         logcat.write_log_entry(self, "Number of iterations: " + str(config.numIter)) 
         logcat.write_log_entry(self, "Exported receivers: " + str(len(receivers)))
@@ -79,23 +83,25 @@ class Fuzzer(Module, loader.ClassLoader):
         for i in xrange(config.numIter):
             self.stdout.write("[color blue]Iteration: %d --------------------------------------------------------------------------------[/color]\n" % (i + 1))
             for template in templates:
-                template.send(self)
-                sleep(config.intentTimeout)
-                
-        appFilePath = config.outputPath + packageName + ".app.log"
-        crashFilePath = config.outputPath + packageName + ".crash.log"
-        logcat.dump_logcat(self, config.androidSDK, appFilePath, crashFilePath)
+                try:
+                    template.send(self)
+                    sleep(config.intentTimeout)
+                    template.stopService(self)
+                except:
+                    self.stderr.write("[color red]Failed executing template[/color]\n")
+        logcat_proc.kill();
     
     def __build_template(self, templates, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, {}))
         metaData = metaStore.get(locator, {})
         categories = metaData.get("categories", [])
         actions = metaData.get("actions", [])
+        data = metaData.get("data", [])
         for action in actions:
-            templates.append(IntentTemplate(self, staticData, type, component, action, categories))
+            templates.append(IntentTemplate(self, staticData, type, component, action, categories, data))
         # Even if there is no expected action defined in the intent filter: 
         # There is always the possibility to directly send an intent to a component.
-        templates.append(IntentTemplate(self, staticData, type, component, "null", categories))
+        templates.append(IntentTemplate(self, staticData, type, component, "null", categories, data))
     
     def __load_json(self, filePath):
         try:
@@ -107,7 +113,7 @@ class Fuzzer(Module, loader.ClassLoader):
     
 class IntentTemplate:
     
-    def __init__(self, context, staticData, type, component, action, categories):
+    def __init__(self, context, staticData, type, component, action, categories, data):
         IntentBuilder = context.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__)
         self.intentBuilder = context.new(IntentBuilder)
         self.staticData = staticData
@@ -116,6 +122,7 @@ class IntentTemplate:
         self.template["component"] = component
         self.template["action"] = action
         self.template["categories"] = categories
+        self.template["data"] = data;
         
     def send(self, context):
         try:
@@ -129,8 +136,16 @@ class IntentTemplate:
                 context.getContext().startActivity(intent)
             elif self.template["type"] == "service":
                 context.getContext().startService(intent)
-        except:
-            context.stderr.write("[color red]Failed executing intent: %s[/color]\n" % sys.exc_info()[1])
+        except ReflectionException as e:
+            context.stderr.write("[color red]Failed sending intent: %s[/color]\n" % e.message.encode('utf-8'))
+            
+    def stopService(self, context):
+        try:
+            if self.template["type"] == "service":
+                intent = self.intentBuilder.build(json.dumps(self.template), self.staticData)
+                context.getContext().stopService(intent)
+        except ReflectionException as e:
+            context.stderr.write("[color red]Failed stopping service: %s[/color]\n" % e.message.encode('utf-8'))
             
 class Config:
     

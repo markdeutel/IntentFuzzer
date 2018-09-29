@@ -19,15 +19,17 @@ import java.nio.charset.Charset;
 */
 public class IntentBuilder
 {
-    private Random random = new Random();
-    private IntegerRandomGenerator integerGenerator = new IntegerRandomGenerator(random);
-    private ShortRandomGenerator shortGenerator = new ShortRandomGenerator(random);
-    private LongRandomGenerator longGenerator = new LongRandomGenerator(random);
-    private FloatRandomGenerator floatGenerator = new FloatRandomGenerator(random);
-    private DoubleRandomGenerator doubleGenerator = new DoubleRandomGenerator(random);
-    private StringRandomGenerator stringGenerator = new StringRandomGenerator(random);
-    private CharRandomGenerator charGenerator = new CharRandomGenerator(random);
-    private BooleanRandomGenerator booleanGenerator = new BooleanRandomGenerator(random);
+    private static Random random = new Random();
+    private IntegerRandomGenerator integerGenerator = new IntegerRandomGenerator();
+    private ShortRandomGenerator shortGenerator = new ShortRandomGenerator();
+    private LongRandomGenerator longGenerator = new LongRandomGenerator();
+    private FloatRandomGenerator floatGenerator = new FloatRandomGenerator();
+    private DoubleRandomGenerator doubleGenerator = new DoubleRandomGenerator();
+    private StringRandomGenerator stringGenerator = new StringRandomGenerator();
+    private CharRandomGenerator charGenerator = new CharRandomGenerator();
+    private BooleanRandomGenerator booleanGenerator = new BooleanRandomGenerator();
+    
+    private static final String DEFAULT_DATA = "http://%s:%s%s/%s";
     
     public Intent build(final String jsonTemplate, final String staticDataStr)
     {
@@ -45,12 +47,19 @@ public class IntentBuilder
             for (int i=0; i<categories.length(); ++i)
                 intent.addCategory(categories.getString(i));
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-
-            // add uri
-            if (data.length() != 0)
+            
+            // set data uri
+            if (floatGenerator.generate() < 0.7)
             {
-                final String dataTemplate = data.getString(random.nextInt(data.length()));
-                intent.setData(Uri.parse(dataTemplate.replaceAll("%s", stringGenerator.generate())));
+                if(data.length() != 0)
+                {
+                    final String dataStr = data.getString(integerGenerator.generate(data.length()));
+                    intent.setData(Uri.parse(dataStr.replaceAll("%s", stringGenerator.generate())));
+                }
+                else
+                {
+                    intent.setData(Uri.parse(DEFAULT_DATA.replaceAll("%s", stringGenerator.generate())));
+                }
             }
             else
             {
@@ -75,7 +84,7 @@ public class IntentBuilder
         }
         catch (final JSONException e)
         {
-            Log.e(IntentBuilder.class.getName(), "Failed parsing data string: ", e);
+            Log.e(IntentBuilder.class.getName(), "Failed building intent: ", e);
             return null;
         }
     }
@@ -113,31 +122,31 @@ public class IntentBuilder
         methodName = methodName.toLowerCase();
         if (methodName.contains("string") || methodName.contains("charsequence"))
             if (methodName.contains("array"))
-                intent.putExtra(key, stringGenerator.generateArray(new String[random.nextInt(100)]));
+                intent.putExtra(key, stringGenerator.generateArray());
             else intent.putExtra(key, stringGenerator.generate());
         else if (methodName.contains("int"))
             if (methodName.contains("array"))
-                intent.putExtra(key, integerGenerator.generateArray(new Integer[random.nextInt(100)]));
+                intent.putExtra(key, integerGenerator.generateArray());
             else intent.putExtra(key, integerGenerator.generate());
         else if (methodName.contains("short"))
             if (methodName.contains("array"))
-                intent.putExtra(key, shortGenerator.generateArray(new Short[random.nextInt(100)]));
+                intent.putExtra(key, shortGenerator.generateArray());
             else intent.putExtra(key, shortGenerator.generate());
         else if (methodName.contains("long"))
             if (methodName.contains("array"))
-                intent.putExtra(key, longGenerator.generateArray(new Long[random.nextInt(100)]));
+                intent.putExtra(key, longGenerator.generateArray());
             else intent.putExtra(key, longGenerator.generate());
         else if (methodName.contains("float"))
             if (methodName.contains("array"))
-                intent.putExtra(key, floatGenerator.generateArray(new Float[random.nextInt(100)]));
+                intent.putExtra(key, floatGenerator.generateArray());
             else intent.putExtra(key, floatGenerator.generate());
         else if (methodName.contains("double"))
             if (methodName.contains("array"))
-                intent.putExtra(key, doubleGenerator.generateArray(new Double[random.nextInt(100)]));
+                intent.putExtra(key, doubleGenerator.generateArray());
             else intent.putExtra(key, doubleGenerator.generate());
         else if (methodName.contains("boolean"))
             if (methodName.contains("array"))
-                intent.putExtra(key, booleanGenerator.generateArray(new Boolean[random.nextInt(100)]));
+                intent.putExtra(key, booleanGenerator.generateArray());
             else intent.putExtra(key, booleanGenerator.generate());
         else if (methodName.contains("null"))
             intent.putExtra(key, (String)null);
@@ -174,134 +183,128 @@ public class IntentBuilder
     {
         methodName = methodName.toLowerCase();
         if (methodName.contains("string"))
-            bundle.putString(key, stringGenerator.generate());
+            if (methodName.contains("array"))
+                bundle.putStringArray(key, stringGenerator.generateArray());
+            else bundle.putString(key, stringGenerator.generate());
         else if (methodName.contains("int"))
-            bundle.putInt(key, integerGenerator.generate());
+            if (methodName.contains("array"))
+                bundle.putIntArray(key, integerGenerator.generateArray());
+            else bundle.putInt(key, integerGenerator.generate());
         else if (methodName.contains("short"))
-            bundle.putShort(key, shortGenerator.generate());
+            if (methodName.contains("array"))
+                bundle.putShortArray(key, shortGenerator.generateArray());
+            else bundle.putShort(key, shortGenerator.generate());
         else if (methodName.contains("long"))
-            bundle.putLong(key, longGenerator.generate());
+            if (methodName.contains("array"))
+                bundle.putLongArray(key, longGenerator.generateArray());
+            else bundle.putLong(key, longGenerator.generate());
         else if (methodName.contains("float"))
-            bundle.putFloat(key, floatGenerator.generate());
+            if (methodName.contains("array"))
+                bundle.putFloatArray(key, floatGenerator.generateArray());
+            else bundle.putFloat(key, floatGenerator.generate());
         else if (methodName.contains("double"))
-            bundle.putDouble(key, doubleGenerator.generate());
+            if (methodName.contains("array"))
+                bundle.putDoubleArray(key, doubleGenerator.generateArray());
+            else bundle.putDouble(key, doubleGenerator.generate());
         else if (methodName.contains("boolean"))
-            bundle.putBoolean(key, booleanGenerator.generate());
+            if (methodName.contains("array"))
+                bundle.putBooleanArray(key, booleanGenerator.generateArray());
+            else bundle.putBoolean(key, booleanGenerator.generate());
         else if (methodName.contains("null"))
             bundle.putString(key, (String)null);
         else
             bundle.putString(key, stringGenerator.generate());
     }
 
-    private static abstract class RandomGenerator<T>
+    private static class IntegerRandomGenerator
     {
-        private static final Integer MAX_LEN = 100;
-        protected final Random random;
-
-        public RandomGenerator(Random random)
+        public int generate()
         {
-            this.random = random;
+            return random.nextInt();
         }
-
-        public abstract T generate();
         
-        public T[] generateArray(T[] arr)
+        public int generate(int max)
         {
+            return random.nextInt(max);
+        }
+        
+        public int[] generateArray()
+        {
+            int[] arr = new int[random.nextInt(100)];
             for (int i = 0; i < arr.length; ++i)
                 arr[i] = generate();
             return arr;
         }
-
-        public List<T> generateList()
-        {
-            int size = random.nextInt(MAX_LEN);
-            List<T> result = new ArrayList<>(size);
-            for (int i = 0; i < size; ++i)
-                result.add(generate());
-            return result;
-        }
     }
 
-    private static class IntegerRandomGenerator extends RandomGenerator<Integer>
-    {
-        public IntegerRandomGenerator(Random random)
-        {
-            super(random);
-        }
-        
-        @Override
-        public Integer generate()
-        {
-            return random.nextInt();
-        }
-    }
-
-    private static class ShortRandomGenerator extends RandomGenerator<Short>
-    {
-        public ShortRandomGenerator(Random random)
-        {
-            super(random);
-        }
-        
-        @Override
-        public Short generate()
+    private static class ShortRandomGenerator
+    {        
+        public short generate()
         {
             return (short) random.nextInt(Short.MAX_VALUE);
         }
+        
+        public short[] generateArray()
+        {
+            short[] arr = new short[random.nextInt(100)];
+            for (int i = 0; i < arr.length; ++i)
+                arr[i] = generate();
+            return arr;
+        }
     }
 
-    private static class LongRandomGenerator extends RandomGenerator<Long>
+    private static class LongRandomGenerator
     {
-        public LongRandomGenerator(Random random)
-        {
-            super(random);
-        }
-
-        @Override
-        public Long generate()
+        public long generate()
         {
             return random.nextLong();
         }
+        
+        public long[] generateArray()
+        {
+            long[] arr = new long[random.nextInt(100)];
+            for (int i = 0; i < arr.length; ++i)
+                arr[i] = generate();
+            return arr;
+        }
     }
 
-    private static class FloatRandomGenerator extends RandomGenerator<Float>
+    private static class FloatRandomGenerator
     {
-        public FloatRandomGenerator(Random random)
-        {
-            super(random);
-        }
-        
-        @Override
-        public Float generate()
+        public float generate()
         {
             return random.nextFloat();
         }
+        
+        public float[] generateArray()
+        {
+            float[] arr = new float[random.nextInt(100)];
+            for (int i = 0; i < arr.length; ++i)
+                arr[i] = generate();
+            return arr;
+        }
     }
 
-    private static class DoubleRandomGenerator extends RandomGenerator<Double>
-    {
-        public DoubleRandomGenerator(Random random)
-        {
-            super(random);
-        }
-        
-        @Override
-        public Double generate()
+    private static class DoubleRandomGenerator
+    {        
+        public double generate()
         {
             return random.nextDouble();
         }
+        
+        public double[] generateArray()
+        {
+            double[] arr = new double[random.nextInt(100)];
+            for (int i = 0; i < arr.length; ++i)
+                arr[i] = generate();
+            return arr;
+        }
     }
 
-    private static class StringRandomGenerator extends RandomGenerator<String>
+    private static class StringRandomGenerator
     {
         private static final String DATA = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
         
-        public StringRandomGenerator(Random random)
-        {
-            super(random);
-        }
-        
-        @Override
         public String generate()
         {
             int length = random.nextInt(100) + 10;
@@ -310,35 +313,47 @@ public class IntentBuilder
                 sb.append(DATA.charAt(random.nextInt(DATA.length())));
             return sb.toString();
         }
+        
+        public String[] generateArray()
+        {
+            String[] arr = new String[random.nextInt(100)];
+            for (int i = 0; i < arr.length; ++i)
+                arr[i] = generate();
+            return arr;
+        }
     }
 
-    private static class BooleanRandomGenerator extends RandomGenerator<Boolean>
-    {
-        public BooleanRandomGenerator(Random random)
-        {
-            super(random);
-        }
-        
-        @Override
-        public Boolean generate()
+    private static class BooleanRandomGenerator
+    {        
+        public boolean generate()
         {
             return random.nextBoolean();
         }
+        
+        public boolean[] generateArray()
+        {
+            boolean[] arr = new boolean[random.nextInt(100)];
+            for (int i = 0; i < arr.length; ++i)
+                arr[i] = generate();
+            return arr;
+        }
     }
 
-    private static class CharRandomGenerator extends RandomGenerator<Character>
+    private static class CharRandomGenerator
     {
         private static final String DATA = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
         
-        public CharRandomGenerator(Random random)
-        {
-            super(random);
-        }
-        
-        @Override
-        public Character generate()
+        public char generate()
         {
             return DATA.charAt(random.nextInt(DATA.length()));
+        }
+        
+        public char[] generateArray()
+        {
+            char[] arr = new char[random.nextInt(100)];
+            for (int i = 0; i < arr.length; ++i)
+                arr[i] = generate();
+            return arr;
         }
     }
 }
