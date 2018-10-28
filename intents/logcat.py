@@ -11,5 +11,5 @@ def logcat_listen(context, filePath, androidSDK):
             f.flush()
             return Popen([androidSDK + "platform-tools/adb", "logcat"], stdout=f)
     except CalledProcessError as e:
-        context.stderr.write("Failed calling logcat: %s\n" % e.output)
+        context.stderr.write("Failed calling logcat: %s\n" % str(e))
     

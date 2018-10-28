@@ -1,26 +1,10 @@
 {
     "dataStore": "~/deepthought/bachelor/AndroidApks/datastore/",
-    "outputFolder": "~/deepthought/bachelor/AndroidApks/output_2/",
+    "outputFolder": "~/deepthought/bachelor/AndroidApks/output_test/",
     "androidSDK": "~/Android/Sdk/",
     "intentTimeout": 5,
     "numberIterations": 10,
     "packageNames": [
-        "com.trivago",
-        "com.twitter.android",
-        "com.ubercab",
-        "com.zdf.android.mediathek",
-        "de.zalando.mobile",
-        "kik.android",
-        "net.lovoo.android",
-        "com.king.candycrushsaga",
-        "com.king.candycrushsodasaga",
-        "com.airbnb.android",
-        "com.alien.shooter.galaxy.attack",
-        "com.amazon.mp3",
-        "com.apple.android",
-        "com.camera.beautycam",
-        "com.microsoft.office.outlook",
-        "com.microsoft.office.word",
-        "com.nianticlabs.pokemongo"
+        "de.dhl.paket"
     ]
 }

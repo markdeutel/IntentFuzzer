@@ -3,6 +3,7 @@ import android.content.ComponentName;
 import android.os.Bundle;
 import 	android.net.Uri;
 
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,9 +81,10 @@ public class IntentBuilder
                     putBundleExtras(intent, bundleInvocations, bundleName);
             }
             
+            Log.i(IntentBuilder.class.getName(), intent.toUri(0));
             return intent;
         }
-        catch (final JSONException e)
+        catch (final Exception e)
         {
             Log.e(IntentBuilder.class.getName(), "Failed building intent: ", e);
             return null;
