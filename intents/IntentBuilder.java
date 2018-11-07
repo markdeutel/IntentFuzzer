@@ -32,63 +32,63 @@ public class IntentBuilder
     
     private static final String DEFAULT_DATA = "http://%s:%s%s/%s";
     
-    public Intent build(final String jsonTemplate, final String staticDataStr)
+    public IntentBuilder(final String valueStr) throws JSONException
     {
-        try
+        stringGenerator.clearStrings();
+        final JSONArray strArr = new JSONArray(valueStr.substring(valueStr.indexOf('['), valueStr.lastIndexOf(']') + 1));
+        for (int i=0; i<strArr.length(); ++i)
+            stringGenerator.addString(strArr.getString(i));
+    }
+    
+    public Intent build(final String jsonTemplate, final String staticDataStr) throws JSONException
+    {
+        // build intent
+        final Intent intent = new Intent();
+        final JSONObject template = new JSONObject(jsonTemplate.substring(jsonTemplate.indexOf('{'), jsonTemplate.lastIndexOf('}') + 1));
+        final JSONArray component = template.getJSONArray("component");
+        final JSONArray categories = template.getJSONArray("categories");
+        final JSONArray data = template.getJSONArray("data");
+        final String action = template.getString("action").equals("null") ? null : template.getString("action");
+        intent.setComponent(new ComponentName(component.getString(0), component.getString(1)));
+        intent.setAction(action);
+        for (int i=0; i<categories.length(); ++i)
+            intent.addCategory(categories.getString(i));
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+        
+        // set data uri
+        if (floatGenerator.generate() < 0.7)
         {
-            // build intent
-            final Intent intent = new Intent();
-            final JSONObject template = new JSONObject(jsonTemplate.substring(jsonTemplate.indexOf('{'), jsonTemplate.lastIndexOf('}') + 1));
-            final JSONArray component = template.getJSONArray("component");
-            final JSONArray categories = template.getJSONArray("categories");
-            final JSONArray data = template.getJSONArray("data");
-            final String action = template.getString("action").equals("null") ? null : template.getString("action");
-            intent.setComponent(new ComponentName(component.getString(0), component.getString(1)));
-            intent.setAction(action);
-            for (int i=0; i<categories.length(); ++i)
-                intent.addCategory(categories.getString(i));
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-            
-            // set data uri
-            if (floatGenerator.generate() < 0.7)
+            if(data.length() != 0)
             {
-                if(data.length() != 0)
-                {
-                    final String dataStr = data.getString(integerGenerator.generate(data.length()));
-                    intent.setData(Uri.parse(dataStr.replaceAll("%s", stringGenerator.generate())));
-                }
-                else
-                {
-                    intent.setData(Uri.parse(DEFAULT_DATA.replaceAll("%s", stringGenerator.generate())));
-                }
+                final String dataStr = data.getString(integerGenerator.generate(data.length()));
+                intent.setData(Uri.parse(dataStr.replaceAll("%s", stringGenerator.generate().replace(" ", ""))));
             }
             else
             {
-                intent.setData(null);
+                intent.setData(Uri.parse(DEFAULT_DATA.replaceAll("%s", stringGenerator.generate().replace(" ", ""))));
             }
-
-            // set provided extras
-            final JSONObject staticData = new JSONObject(staticDataStr.substring(staticDataStr.indexOf('{'), staticDataStr.lastIndexOf('}') + 1));
-            if (staticData.length() > 0)
-            {
-                final JSONObject intentInvocations = staticData.getJSONObject("intentInvocations");
-                final JSONObject bundleInvocations = staticData.getJSONObject("bundleInvocations");
-
-                final List<String> bundleNames = new ArrayList<>();
-                putIntentExtras(intent, intentInvocations, bundleNames);
-                putBundleExtras(intent, bundleInvocations, null);
-                for (final String bundleName : bundleNames)
-                    putBundleExtras(intent, bundleInvocations, bundleName);
-            }
-            
-            Log.i(IntentBuilder.class.getName(), intent.toUri(0));
-            return intent;
         }
-        catch (final Exception e)
+        else
         {
-            Log.e(IntentBuilder.class.getName(), "Failed building intent: ", e);
-            return null;
+            intent.setData(null);
         }
+        
+        // set provided extras
+        final JSONObject staticData = new JSONObject(staticDataStr.substring(staticDataStr.indexOf('{'), staticDataStr.lastIndexOf('}') + 1));
+        if (staticData.length() > 0)
+        {
+            final JSONObject intentInvocations = staticData.getJSONObject("intentInvocations");
+            final JSONObject bundleInvocations = staticData.getJSONObject("bundleInvocations");
+            
+            final List<String> bundleNames = new ArrayList<>();
+            putIntentExtras(intent, intentInvocations, bundleNames);
+            putBundleExtras(intent, bundleInvocations, null);
+            for (final String bundleName : bundleNames)
+                putBundleExtras(intent, bundleInvocations, bundleName);
+        }
+       
+        Log.i(IntentBuilder.class.getName(), intent.toUri(0));
+        return intent;
     }
         
     private void putIntentExtras(Intent intent, JSONObject intentInvocations, List<String> bundleNames) throws JSONException
@@ -305,15 +305,21 @@ public class IntentBuilder
 
     private static class StringRandomGenerator
     {
-        private static final String DATA = " !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+        private List<String> strings = new ArrayList<>();
+        
+        public void clearStrings()
+        {
+            strings.clear();
+        }
+        
+        public void addString(final String str)
+        {
+            strings.add(str);
+        }
         
         public String generate()
         {
-            int length = random.nextInt(100) + 10;
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < length; ++i)
-                sb.append(DATA.charAt(random.nextInt(DATA.length())));
-            return sb.toString();
+            return strings.get(random.nextInt(strings.size()));
         }
         
         public String[] generateArray()

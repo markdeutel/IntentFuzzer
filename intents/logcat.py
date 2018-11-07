@@ -6,6 +6,7 @@ def write_log_entry(context, msg):
     
 def logcat_listen(context, filePath, androidSDK):
     try:
+        check_call([androidSDK + "platform-tools/adb", "connect", "192.168.189.39"])
         check_call([androidSDK + "platform-tools/adb", "logcat", "-c"])
         with open(filePath, "w") as f:
             f.flush()

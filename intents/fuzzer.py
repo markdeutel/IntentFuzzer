@@ -41,12 +41,13 @@ class Fuzzer(Module, loader.ClassLoader):
         templates = []
         dataStore = self.__load_json(config.dataStorePath + packageName + ".json")
         metaStore = self.__load_json(config.dataStorePath + packageName + ".meta")
+        strgStore = self.__load_strg(config.dataStorePath + packageName + ".str", 500)
         if dataStore == None or metaStore == None:
             self.stderr.write("Could not find data from static analysis\n")
             return;
         
         # build the intent templates
-        intentBuilder = self.new(self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__))
+        intentBuilder = self.new(self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__), json.dumps(strgStore))
         packageManager = FuzzerPackageManager(self)
         receivers = packageManager.get_receivers(packageName)
         self.stdout.write("Found %s exported receivers\n" % len(receivers))
@@ -112,6 +113,20 @@ class Fuzzer(Module, loader.ClassLoader):
         except:
             self.stderr.write("Failed reading json file: %s\n" % sys.exc_info()[1])
             return None
+        
+    def __load_strg(self, filePath, maxElm):
+        try:
+            with open(filePath, 'r') as file:
+                count = 0;
+                strgStore = [];
+                for line in file:
+                    if count > maxElm:
+                        break
+                    strgStore.append(line.rstrip())
+                return strgStore
+        except:
+            self.stderr.write("Failed reading string file: %s\n" % sys.exc_info()[1])
+            return None
     
 class IntentTemplate:
     
@@ -128,7 +143,8 @@ class IntentTemplate:
     def send(self, context):
         try:
             intent = self.intentBuilder.build(json.dumps(self.template), self.staticData)
-            context.stdout.write("%s\n" % str(intent.toUri(0)).encode("utf-8"))
+            context.stdout.write("%s\n" % self.toString())
+            #context.stdout.write("%s\n" % str(intent.toUri(0)).encode("utf-8"))
             #logcat.write_log_entry(context, str(intent.toUri(0)).encode("utf-8"))
             
             if self.template["type"] == "receiver":
@@ -151,6 +167,11 @@ class IntentTemplate:
                 context.getContext().stopService(intent)
         except ReflectionException as e:
             context.stderr.write("[color red]Failed stopping service: %s[/color]\n" % e.message.encode('utf-8'))
+            
+    def toString(self):
+        sb = ["type: ", self.template["type"], " component: ", self.template["component"][0], "/", 
+              self.template["component"][1], " action: ", self.template["action"]];
+        return "".join(sb)
             
 class Config:
     

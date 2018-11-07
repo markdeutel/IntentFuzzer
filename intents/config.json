@@ -1,10 +1,29 @@
 {
-    "dataStore": "~/deepthought/bachelor/AndroidApks/datastore/",
+    "dataStore": "~/deepthought/bachelor/AndroidApks/datastore_2/",
     "outputFolder": "~/deepthought/bachelor/AndroidApks/output_test/",
     "androidSDK": "~/Android/Sdk/",
     "intentTimeout": 5,
     "numberIterations": 10,
     "packageNames": [
-        "de.dhl.paket"
+        "app.qrcode",
+        "br.com.tapps.bidwars",
+        "canvasm.myo2",
+        "ch.publisheria.bring",
+        "com.accuweather.android",
+        "com.adobe.pdfreader.acrobatreader.free",
+        "com.alibaba.aliexpresshd",
+        "com.amazon.mShop.android.shopping",
+        "com.audible.application",
+        "com.autoscout24",
+        "com.azarlive.android",
+        "com.instagram.android",
+        "com.snapchat.android",
+        "com.spotify.music",
+        "com.whatsapp",
+        "de.burgerking.kingfinder",
+        "de.dhl.paket",
+        "de.lieferheld.android",
+        "de.meinfernbus",
+        "tv.twitch.android.app"
     ]
 }
