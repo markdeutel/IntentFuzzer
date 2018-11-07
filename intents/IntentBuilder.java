@@ -122,7 +122,10 @@ public class IntentBuilder
     private void putIntentExtra(Intent intent, String methodName, String key)
     {
         methodName = methodName.toLowerCase();
-        if (methodName.contains("string") || methodName.contains("charsequence"))
+        float f = floatGenerator.generate();
+        if (f <= 0.2f)
+            intent.putExtra(key, (String)null);
+        else if (methodName.contains("string") || methodName.contains("charsequence"))
             if (methodName.contains("array"))
                 intent.putExtra(key, stringGenerator.generateArray());
             else intent.putExtra(key, stringGenerator.generate());
@@ -150,8 +153,6 @@ public class IntentBuilder
             if (methodName.contains("array"))
                 intent.putExtra(key, booleanGenerator.generateArray());
             else intent.putExtra(key, booleanGenerator.generate());
-        else if (methodName.contains("null"))
-            intent.putExtra(key, (String)null);
         else
             intent.putExtra(key, stringGenerator.generate());
     }
@@ -184,7 +185,10 @@ public class IntentBuilder
     private void putBundleExtra(Bundle bundle, String methodName, String key)
     {
         methodName = methodName.toLowerCase();
-        if (methodName.contains("string"))
+        float f = floatGenerator.generate();
+        if (f <= 0.2f)
+            bundle.putString(key, (String)null);
+        else if (methodName.contains("string"))
             if (methodName.contains("array"))
                 bundle.putStringArray(key, stringGenerator.generateArray());
             else bundle.putString(key, stringGenerator.generate());

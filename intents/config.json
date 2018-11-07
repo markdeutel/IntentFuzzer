@@ -5,10 +5,6 @@
     "intentTimeout": 5,
     "numberIterations": 10,
     "packageNames": [
-        "app.qrcode",
-        "br.com.tapps.bidwars",
-        "canvasm.myo2",
-        "ch.publisheria.bring",
         "com.accuweather.android",
         "com.adobe.pdfreader.acrobatreader.free",
         "com.alibaba.aliexpresshd",

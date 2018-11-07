@@ -86,9 +86,9 @@ class Fuzzer(Module, loader.ClassLoader):
             self.stdout.write("[color blue]Iteration: %d --------------------------------------------------------------------------------[/color]\n" % (i + 1))
             for template in templates:
                 try:
+                    self.stdout.write("%s\n" % template.toString())
                     template.send(self)
                     sleep(config.intentTimeout)
-                    #template.stopService(self)
                     template.killProcess(self)
                 except  Exception as e:
                     self.stderr.write("[color red]Failed executing template: %s[/color]\n" % str(e))
@@ -143,10 +143,6 @@ class IntentTemplate:
     def send(self, context):
         try:
             intent = self.intentBuilder.build(json.dumps(self.template), self.staticData)
-            context.stdout.write("%s\n" % self.toString())
-            #context.stdout.write("%s\n" % str(intent.toUri(0)).encode("utf-8"))
-            #logcat.write_log_entry(context, str(intent.toUri(0)).encode("utf-8"))
-            
             if self.template["type"] == "receiver":
                 context.getContext().sendBroadcast(intent)
             elif self.template["type"] == "activity":
