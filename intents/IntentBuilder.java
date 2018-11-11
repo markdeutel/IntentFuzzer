@@ -50,6 +50,7 @@ public class IntentBuilder
         final JSONArray data = template.getJSONArray("data");
         final String action = template.getString("action").equals("null") ? null : template.getString("action");
         intent.setComponent(new ComponentName(component.getString(0), component.getString(1)));
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setAction(action);
         for (int i=0; i<categories.length(); ++i)
             intent.addCategory(categories.getString(i));
