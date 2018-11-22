@@ -2,27 +2,9 @@
     "dataStore": "~/deepthought/bachelor/AndroidApks/datastore_2/",
     "outputFolder": "~/deepthought/bachelor/AndroidApks/output_test/",
     "androidSDK": "~/Android/Sdk/",
-    "intentTimeout": 5,
+    "intentTimeout": 4,
     "numberIterations": 10,
     "packageNames": [
-        "com.azurgames.BattleGroundRoyale",
-        "com.babbel.mobile.android.en",
-        "com.booking",
-        "com.contextlogic.wish",
-        "com.discord",
-        "com.ebay.kleinanzeigen",
-        "com.ebay.mobile",
-        "com.google.android.apps.translate",
-        "com.google.android.apps.youtube.music",
-        "com.medion.alditalkactivation",
-        "com.paypal.android.p2pmobile",
-        "com.pinterest",
-        "com.ryanair.cheapflights",
-        "com.skype.raider",
-        "com.soundcloud.android",
-        "de.mcdonalds.mcdonaldsinfoapp",
-        "deezer.android.app",
-        "org.mozilla.firefox",
-        "org.telegram.messenger"
+        "com.audible.application"
     ]
 }

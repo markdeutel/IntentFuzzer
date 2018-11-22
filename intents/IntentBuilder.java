@@ -50,6 +50,7 @@ public class IntentBuilder
         final JSONArray data = template.getJSONArray("data");
         final String action = template.getString("action").equals("null") ? null : template.getString("action");
         intent.setComponent(new ComponentName(component.getString(0), component.getString(1)));
+        
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setAction(action);
         for (int i=0; i<categories.length(); ++i)
@@ -62,11 +63,11 @@ public class IntentBuilder
             if(data.length() != 0)
             {
                 final String dataStr = data.getString(integerGenerator.generate(data.length()));
-                intent.setData(Uri.parse(dataStr.replaceAll("%s", stringGenerator.generate().replace(" ", ""))));
+                intent.setData(Uri.parse(stringGenerator.generateUri(dataStr)));
             }
             else
             {
-                intent.setData(Uri.parse(DEFAULT_DATA.replaceAll("%s", stringGenerator.generate().replace(" ", ""))));
+                intent.setData(Uri.parse(stringGenerator.generateUri(DEFAULT_DATA)));
             }
         }
         else
@@ -310,6 +311,7 @@ public class IntentBuilder
 
     private static class StringRandomGenerator
     {
+        private static final String URI_CHARS = "abscdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW";
         private List<String> strings = new ArrayList<>();
         
         public void clearStrings()
@@ -325,6 +327,14 @@ public class IntentBuilder
         public String generate()
         {
             return strings.get(random.nextInt(strings.size()));
+        }
+        
+        public String generateUri(String templateStr)
+        {
+            final StringBuilder sb = new StringBuilder();
+            for (int i=0; i<6; ++i)
+                sb.append(URI_CHARS.charAt(random.nextInt(URI_CHARS.length())));
+            return templateStr.replace("%s", sb.toString());
         }
         
         public String[] generateArray()
