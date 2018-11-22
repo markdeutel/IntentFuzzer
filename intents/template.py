@@ -2,9 +2,8 @@ import json
 
 class IntentTemplate:
     
-    def __init__(self, intentBuilder, processManager, staticData, type, component, action, categories, data):
+    def __init__(self, intentBuilder, staticData, type, component, action, categories, data):
         self.intentBuilder = intentBuilder
-        self.processManager = processManager
         self.staticData = staticData
         self.template = {}
         self.template["type"] = type

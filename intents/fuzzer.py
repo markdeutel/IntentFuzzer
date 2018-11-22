@@ -69,8 +69,7 @@ class Fuzzer(Module, loader.ClassLoader):
         metaStore = self.__load_json(config.dataStorePath + packageName + ".meta")
         strgStore = self.__load_strg(config.dataStorePath + packageName + ".str", 300)
         
-        # get ProcessManager and IntentBuilder instance
-        processManager = self.new(self.loadClass("ProcessManager.apk", "ProcessManager", relative_to=__file__))
+        # get IntentBuilder instance
         intentBuilder = self.new(self.loadClass("IntentBuilder.apk", "IntentBuilder", relative_to=__file__), json.dumps(strgStore))
         
         # build the intent templates
@@ -79,7 +78,7 @@ class Fuzzer(Module, loader.ClassLoader):
         self.stdout.write("Found %s exported receivers\n" % len(receivers))
         for receiver in receivers:
             receiverName = str(receiver.name).encode("utf-8")
-            self.__build_template(intentBuilder, processManager, templates, dataStore, metaStore, receiverName, "receiver", (packageName, receiverName))
+            self.__build_template(intentBuilder, templates, dataStore, metaStore, receiverName, "receiver", (packageName, receiverName))
 
         # activities might have an alias name declared for them. If this is true, the all found static data for this component 
         # is located under the real name not the alias
@@ -89,15 +88,15 @@ class Fuzzer(Module, loader.ClassLoader):
             targetActivityName = str(activity.targetActivity).encode("utf-8")
             activityName = str(activity.name).encode("utf-8")
             if targetActivityName != "null":
-                self.__build_template(intentBuilder, processManager, templates, dataStore, metaStore, targetActivityName, "activity", (packageName, activityName))
+                self.__build_template(intentBuilder, templates, dataStore, metaStore, targetActivityName, "activity", (packageName, activityName))
             else:
-                self.__build_template(intentBuilder, processManager, templates, dataStore, metaStore, activityName, "activity", (packageName, activityName))
+                self.__build_template(intentBuilder, templates, dataStore, metaStore, activityName, "activity", (packageName, activityName))
 
         services = packageManager.get_services(packageName)
         self.stdout.write("Found %s exported services\n" % len(services))
         for service in services:
             serviceName = str(service.name).encode("utf-8")
-            self.__build_template(intentBuilder, processManager, templates, dataStore, metaStore, serviceName, "service", (packageName, serviceName))
+            self.__build_template(intentBuilder, templates, dataStore, metaStore, serviceName, "service", (packageName, serviceName))
 
         # send all intents
         appFilePath = config.outputPath + packageName + ".app.log"
@@ -121,17 +120,17 @@ class Fuzzer(Module, loader.ClassLoader):
                     self.stderr.write("[color red]Failed sending intent: %s[/color]\n" % str(e))
         self.logcat_proc.kill();
     
-    def __build_template(self, intentBuilder, processManager, templates, dataStore, metaStore, locator, type, component):
+    def __build_template(self, intentBuilder, templates, dataStore, metaStore, locator, type, component):
         staticData = json.dumps(dataStore.get(locator, {}))
         metaData = metaStore.get(locator, {})
         categories = metaData.get("categories", [])
         actions = metaData.get("actions", [])
         data = metaData.get("data", [])
         for action in actions:
-            templates.append(IntentTemplate(intentBuilder, processManager, staticData, type, component, action, categories, data))
+            templates.append(IntentTemplate(intentBuilder, staticData, type, component, action, categories, data))
         # Even if there is no expected action defined in the intent filter: 
         # There is always the possibility to directly send an intent to a component.
-        templates.append(IntentTemplate(intentBuilder, processManager, staticData, type, component, "null", categories, data))
+        templates.append(IntentTemplate(intentBuilder, staticData, type, component, "null", categories, data))
     
     def __load_json(self, filePath):
         with open(filePath, 'r') as file:
