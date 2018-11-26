@@ -1,12 +1,12 @@
 NATIVES = $(shell find . -name Android.mk)
 SOURCES = $(shell find . -name *.java)
 
-DX = /home/mark/deepthought/bachelor/drozer/src/drozer/lib/dx
+DX = /drozer/src/drozer/lib/dx
 JAVAC = javac
 NDKBUILD = ndk-build
 PYTHON = python
 
-SDK = /home/mark/deepthought/bachelor/drozer/src/drozer/lib/android.jar
+SDK = /drozer/src/drozer/lib/android.jar
 
 apks: $(SOURCES:.java=.apk)
 clean:
